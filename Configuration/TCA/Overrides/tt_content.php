@@ -54,6 +54,22 @@ use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
         'FILE:EXT:rescue_reports/Configuration/FlexForms/sidebar.xml'
     );
 
+    // Cards-Plugin
+    ExtensionUtility::registerPlugin(
+        'RescueReports',
+        'Cards',
+        'Rescue Reports: Cards',
+        'rescue_reports_cards'
+    );
+
+    $pluginSignatureCards = 'rescuereports_cards';
+    $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_addlist'][$pluginSignatureCards] = 'pi_flexform';
+    $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_excludelist'][$pluginSignatureCards] = 'layout,select_key,pages,recursive';
+    ExtensionManagementUtility::addPiFlexFormValue(
+        $pluginSignatureCards,
+        'FILE:EXT:rescue_reports/Configuration/FlexForms/cards.xml'
+    );
+
     // RSS-Feed-Plugin
     ExtensionUtility::registerPlugin(
         'RescueReports',

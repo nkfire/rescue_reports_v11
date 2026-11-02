@@ -106,12 +106,16 @@ class EventRepository extends Repository
     /**
      * Liefert Events gefiltert nach Datum & Limit
      */
-    public function findFiltered($dateFrom = null, $dateTo = null, int $limit = 0): QueryResultInterface
+    public function findFiltered($dateFrom = null, $dateTo = null, int $limit = 0, bool $excludeDisabledDetail = false): QueryResultInterface
     {
         $query = $this->createQuery();
         $query->getQuerySettings()->setRespectStoragePage(false);
 
         $constraints = $this->buildDateConstraints($query, $dateFrom, $dateTo);
+
+        if ($excludeDisabledDetail) {
+            $constraints[] = $query->equals('disableDetail', false);
+        }
 
         if (!empty($constraints)) {
             $query->matching($query->logicalAnd($constraints));
@@ -129,9 +133,9 @@ class EventRepository extends Repository
     /**
      * Liefert Events gefiltert nach Station, Datum & Limit
      */
-    public function findFilteredByStation(int $stationUid, $dateFrom = null, $dateTo = null, int $limit = 0): QueryResultInterface
+    public function findFilteredByStation(int $stationUid, $dateFrom = null, $dateTo = null, int $limit = 0, bool $excludeDisabledDetail = false): QueryResultInterface
     {
-        $uids = $this->findEventUidsByStation($stationUid, $dateFrom, $dateTo, '', $limit);
+        $uids = $this->findEventUidsByStation($stationUid, $dateFrom, $dateTo, '', $limit, $excludeDisabledDetail);
 
         return $this->findByUids($uids);
     }
@@ -209,7 +213,8 @@ class EventRepository extends Repository
         $dateFrom = null,
         $dateTo = null,
         string $searchWord = '',
-        int $limit = 0
+        int $limit = 0,
+        bool $excludeDisabledDetail = false
     ): array {
         if ($stationUid <= 0) {
             return [];
@@ -246,6 +251,15 @@ class EventRepository extends Repository
                     $queryBuilder->createNamedParameter($stationUid, PDO::PARAM_INT)
                 )
             );
+
+        if ($excludeDisabledDetail) {
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq(
+                    'e.disable_detail',
+                    $queryBuilder->createNamedParameter(0, PDO::PARAM_INT)
+                )
+            );
+        }
 
         $fromDate = $this->convertToDateTime($dateFrom);
         if ($fromDate instanceof \DateTimeInterface) {

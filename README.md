@@ -90,7 +90,30 @@ Eigenständige Statistikseite mit Jahres- und Monatsdiagrammen.
 
 ---
 
-### 3. Sidebar-Widget (`tx_rescuereports_sidebar`)
+### 3. Cards-Widget (`tx_rescuereports_cards`)
+
+Kartenansicht für aktuelle Einsätze mit Bild, Titel und Verlinkung zur Detailansicht, z. B. für die Startseite. Einsätze mit „Detailansicht deaktivieren“ werden nicht gezeigt.
+
+In dieser v11-Version kommt das Kartenbild aus den Einsatzbildern (erstes Bild); Einsätze ohne Bild zeigen eine leere Bildfläche.
+
+**Aktion:** `cards`
+
+| Einstellung | Beschreibung | Standard |
+|---|---|---|
+| **Widget-Überschrift** | Überschrift oberhalb der Karten | – |
+| **Standard-Ortsfeuerwehr** | Vorausgewählte Station | – (alle) |
+| **Anzahl angezeigter Einsätze** | Maximale Anzahl der Karten | 6 |
+| **Bildverarbeitung** | Responsive Bildformat oder Servercrop | Responsive Bildformat |
+| **Bildformat** | Sichtbarer Zuschnitt: 16:9, 4:3 oder 1:1 | 16:9 |
+| **Servercrop-Breite / -Höhe** | Erzeugte Bildgröße in Pixeln, jeweils 1–4000 | 800 × 500 |
+| **Seite für Einsatz-Detailansicht** | Zielseite der Karten | – |
+| **Seite der vollständigen Einsatzliste** | Ziel des „Alle Einsätze“-Links | – |
+
+Bei **Responsive Bildformat** passt sich das Bild der Kartenbreite an und wird per `object-fit: cover` im gewählten Seitenverhältnis dargestellt. Bei **Servercrop** erzeugt TYPO3 ein verarbeitetes Bild mit den konfigurierten Pixelmaßen; im Frontend wird dieses anschließend proportional skaliert.
+
+Bestehende Content-Elemente ohne die neuen Werte bleiben kompatibel und verwenden 16:9 beziehungsweise 800 × 500 als sichere Fallback-Werte.
+
+### 4. Sidebar-Widget (`tx_rescuereports_sidebar`)
 
 Kompaktes Widget für die Seitenleiste – zeigt die letzten N Einsätze.
 
@@ -107,7 +130,7 @@ Kompaktes Widget für die Seitenleiste – zeigt die letzten N Einsätze.
 
 ---
 
-### 4. RSS-Feed (`tx_rescuereports_rss`)
+### 5. RSS-Feed (`tx_rescuereports_rss`)
 
 RSS 2.0-Feed der neuesten Einsätze.
 

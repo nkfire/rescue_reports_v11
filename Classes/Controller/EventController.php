@@ -17,6 +17,9 @@ class EventController extends ActionController
     protected EventRepository $eventRepository;
     protected StationRepository $stationRepository;
 
+    /** Cards-Widget: Einsätze mit deaktivierter Detailansicht ausblenden */
+    protected bool $excludeDisabledDetail = false;
+
     public function __construct(EventRepository $eventRepository)
     {
         $this->eventRepository = $eventRepository;
@@ -152,14 +155,15 @@ class EventController extends ActionController
                     $activeStationUid,
                     $dateFrom,
                     $dateTo,
-                    $maxCount
+                    $maxCount,
+                    $this->excludeDisabledDetail
                 );
             }
         } else {
             if ($enableSearch && $searchWord !== '') {
                 $events = $this->eventRepository->search($searchWord, $dateFrom, $dateTo, $maxCount);
             } else {
-                $events = $this->eventRepository->findFiltered($dateFrom, $dateTo, $maxCount);
+                $events = $this->eventRepository->findFiltered($dateFrom, $dateTo, $maxCount, $this->excludeDisabledDetail);
             }
         }
 
@@ -278,7 +282,7 @@ class EventController extends ActionController
         // Standard "compact", auch für bestehende Plugins ohne gespeicherten FlexForm-Wert.
         $listLayout = (string)($this->settings['listLayout'] ?? '') === 'classic' ? 'classic' : 'compact';
         $compactList = [];
-        if ($listLayout === 'compact' && in_array($templateVariant, ['bootstrap', 'foundation'], true)) {
+        if ($listLayout === 'compact' && !$this->excludeDisabledDetail && in_array($templateVariant, ['bootstrap', 'foundation'], true)) {
             $compactList = GeneralUtility::makeInstance(CompactListBuilder::class)
                 ->build($eventItems, $statistics, $eventItemsByYear !== []);
         }
@@ -323,6 +327,21 @@ class EventController extends ActionController
         ]);
 
         return $this->htmlResponse();
+    }
+
+    /**
+     * Cards-Widget (z. B. Startseite): neueste Einsätze als Karten.
+     * Nutzt die Listenlogik, blendet aber Einsätze ohne Detailansicht aus.
+     */
+    public function cardsAction(
+        ?string $searchWord = null,
+        ?string $station = null,
+        ?string $year = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null
+    ): ResponseInterface {
+        $this->excludeDisabledDetail = true;
+        return $this->listAction($searchWord, $station, $year, $dateFrom, $dateTo);
     }
 
     /**

@@ -1,0 +1,170 @@
+<f:layout name="Default" />
+
+<f:section name="main">
+  <f:variable name="cardImageClass" value="card-img-format" />
+  <f:variable name="cardImageStyle" value="" />
+  <f:variable name="cardImageRatio" value="{settings.cardImageRatio}" />
+  <f:if condition="!{cardImageRatio}">
+    <f:variable name="cardImageRatio" value="16 / 9" />
+  </f:if>
+  <f:if condition="{settings.cardImageMode} == 'servercrop'">
+    <f:variable name="cardImageClass" value="card-img-servercrop" />
+  </f:if>
+  <f:if condition="{cardImageClass} == 'card-img-format'">
+    <f:variable name="cardImageStyle" value="aspect-ratio: {cardImageRatio};" />
+  </f:if>
+
+  <f:if condition="{widgetTitle}">
+    <h2>{widgetTitle}</h2>
+  </f:if>
+
+  <!-- =========================
+       Ergebnisliste
+  ========================== -->
+  <f:if condition="{events}">
+    <f:then>
+      <div class="cards-grid row">
+        <f:for each="{events}" as="event">
+          <div class="col-md-4 col-sm-6 col-xs-12 mb-4 rescue-card-item">
+            <div class="card h-100">
+
+              <!-- Card Image (Hero) with Fallback -->
+              <div class="card-img-top overflow-hidden {cardImageClass}" style="{cardImageStyle}">
+                <f:if condition="{event.images}">
+                  <f:then>
+                    <f:for each="{event.images}" as="image" iteration="iteration">
+                      <f:if condition="{iteration.isFirst}">
+                        <f:render partial="Event/CardImage" arguments="{image: image, alt: event.title, settings: settings, imageClass: cardImageClass}" />
+                      </f:if>
+                    </f:for>
+                  </f:then>
+                  <f:else>
+                    <f:if condition="{event.enableKeywordEscalation}">
+                      <f:then>
+                        <f:for each="{event.keywordEscalation}" as="escalation" iteration="escIter">
+                          <f:if condition="{escIter.isFirst}">
+                            <f:if condition="{escalation.image}">
+                              <f:then>
+                                <f:render partial="Event/CardImage" arguments="{image: escalation.image, alt: escalation.title, settings: settings, imageClass: cardImageClass}" />
+                              </f:then>
+                              <f:else>
+                                <f:if condition="{escalation.category.image}">
+                                  <f:then>
+                                  <f:render partial="Event/CardImage" arguments="{image: escalation.category.image, alt: escalation.category.title, settings: settings, imageClass: cardImageClass}" />
+                                  </f:then>
+                                  <f:else>
+                                    <f:for each="{event.types}" as="type" iteration="typeIteration">
+                                      <f:if condition="{typeIteration.isFirst}">
+                                        <f:if condition="{type.image}">
+                                          <f:then>
+                                            <f:render partial="Event/CardImage" arguments="{image: type.image, alt: type.title, settings: settings, imageClass: cardImageClass}" />
+                                          </f:then>
+                                          <f:else>
+                                            <f:if condition="{type.category.image}">
+                                              <f:render partial="Event/CardImage" arguments="{image: type.category.image, alt: type.category.title, settings: settings, imageClass: cardImageClass}" />
+                                            </f:if>
+                                          </f:else>
+                                        </f:if>
+                                      </f:if>
+                                    </f:for>
+                                  </f:else>
+                                </f:if>
+                              </f:else>
+                            </f:if>
+                          </f:if>
+                        </f:for>
+                      </f:then>
+                      <f:else>
+                        <f:for each="{event.types}" as="type" iteration="typeIteration">
+                          <f:if condition="{typeIteration.isFirst}">
+                            <f:if condition="{type.image}">
+                              <f:then>
+                                <f:render partial="Event/CardImage" arguments="{image: type.image, alt: type.title, settings: settings, imageClass: cardImageClass}" />
+                              </f:then>
+                              <f:else>
+                                <f:if condition="{type.category.image}">
+                                  <f:render partial="Event/CardImage" arguments="{image: type.category.image, alt: type.category.title, settings: settings, imageClass: cardImageClass}" />
+                                </f:if>
+                              </f:else>
+                            </f:if>
+                          </f:if>
+                        </f:for>
+                      </f:else>
+                    </f:if>
+                  </f:else>
+                </f:if>
+              </div>
+
+              <!-- Card Body -->
+              <div class="card-body">
+
+                <!-- Title -->
+                <h2 class="card-title">{event.title}</h2>
+
+                <!-- Subtitle: Einsatzart/Erhöhung • Datum -->
+                <h3 class="card-subtitle mb-2">
+                  <f:if condition="{event.enableKeywordEscalation}">
+                    <f:then>
+                      <f:for each="{event.keywordEscalation}" as="escalation" iteration="escIter">
+                        <f:if condition="{escIter.isFirst}">
+                          {escalation.title} •
+                        </f:if>
+                      </f:for>
+                    </f:then>
+                    <f:else>
+                      <f:if condition="{event.types}">
+                        <f:for each="{event.types}" as="type" iteration="typeIter">
+                          <f:if condition="{typeIter.isFirst}">
+                            {type.title} •
+                          </f:if>
+                        </f:for>
+                      </f:if>
+                    </f:else>
+                  </f:if>
+                  <f:format.date format="d.m.Y">{event.start}</f:format.date>
+                </h3>
+
+                <!-- Description Excerpt -->
+                <f:if condition="{event.description}">
+                  <p class="card-text">
+                    <f:format.crop maxCharacters="120" respectWordBoundaries="true">
+                      <f:format.stripTags>{event.description}</f:format.stripTags>
+                    </f:format.crop>
+                  </p>
+                </f:if>
+
+              </div>
+
+              <!-- Footer: stretched Link -->
+              <div class="card-footer">
+                <f:link.page
+                  pageUid="{detailPageUid}"
+                  additionalParams="{tx_rescuereports_eventlist: {controller: 'Event', action: 'show', event: event.uid}}"
+                  class="stretched-link btn btn-primary">
+                  <span class="btn-text"><f:translate key="LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:cards.readMore" /></span>
+                </f:link.page>
+              </div>
+
+            </div>
+          </div>
+        </f:for>
+      </div>
+
+      <!-- All Events Link -->
+      <f:if condition="{listPageUid}">
+        <div class="text-center mt-4">
+          <f:link.page pageUid="{listPageUid}" class="btn btn-outline-primary">
+            <f:translate key="LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:cards.showAll" />
+          </f:link.page>
+        </div>
+      </f:if>
+
+    </f:then>
+    <f:else>
+      <div class="alert alert-info">
+        <f:translate key="LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:cards.empty" />
+      </div>
+    </f:else>
+  </f:if>
+
+</f:section>

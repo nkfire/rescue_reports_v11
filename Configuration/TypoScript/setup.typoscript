@@ -14,7 +14,17 @@ plugin.tx_rescuereports_eventlist {
     # dateTo = 0
   }
 }
+plugin.tx_rescuereports_cards < plugin.tx_rescuereports_eventlist
+plugin.tx_rescuereports_cards.settings {
+    maxCount = 6
+    yearFilterDefault = all
+    templateVariant = bootstrap
+    cardImageMode = format
+    cardImageRatio = 16 / 9
+}
+
 page.includeCSS.rescueReports = EXT:rescue_reports/Resources/Public/Css/rescue_reports.css
+page.includeCSS.rescueReportsCards = EXT:rescue_reports/Resources/Public/Css/cards.css
 
 # Leaflet.js (OpenStreetMap-Karte)
 page.includeCSS.leaflet = https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css

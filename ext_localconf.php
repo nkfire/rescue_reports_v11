@@ -44,6 +44,18 @@ use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
         ]
     );
 
+    // Cards-Plugin (z. B. Startseite)
+    ExtensionUtility::configurePlugin(
+        'RescueReports',
+        'Cards',
+        [
+            EventController::class => 'cards',
+        ],
+        [
+            EventController::class => '',
+        ]
+    );
+
     // RSS-Feed-Plugin
     ExtensionUtility::configurePlugin(
         'RescueReports',

@@ -98,6 +98,33 @@
         <source>Rescue Reports Daten</source>
       </trans-unit>
 
+      <trans-unit id="cards.readMore">
+        <source>Zum Bericht</source>
+      </trans-unit>
+      <trans-unit id="cards.showAll">
+        <source>Alle Einsätze anzeigen</source>
+      </trans-unit>
+      <trans-unit id="cards.empty">
+        <source>Keine Einsätze gefunden.</source>
+      </trans-unit>
+      <trans-unit id="cards.imageMode">
+        <source>Bildverarbeitung</source>
+      </trans-unit>
+      <trans-unit id="cards.imageModeFormat">
+        <source>Responsives Bildformat</source>
+      </trans-unit>
+      <trans-unit id="cards.imageModeServercrop">
+        <source>Servercrop</source>
+      </trans-unit>
+      <trans-unit id="cards.imageRatio">
+        <source>Bildformat</source>
+      </trans-unit>
+      <trans-unit id="cards.imageWidth">
+        <source>Servercrop-Breite (px)</source>
+      </trans-unit>
+      <trans-unit id="cards.imageHeight">
+        <source>Servercrop-Höhe (px)</source>
+      </trans-unit>
     </body>
   </file>
 </xliff>

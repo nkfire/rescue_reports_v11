@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<T3DataStructure>
+    <sheets>
+        <sheet index="general">
+            <ROOT>
+                <sheetTitle>Cards-Widget</sheetTitle>
+                <type>array</type>
+                <el>
+
+                    <settings.widgetTitle>
+                        <TCEforms>
+                            <label>Widget-Überschrift</label>
+                            <config>
+                                <type>input</type>
+                                <eval>trim</eval>
+                                <placeholder>Aktuelle Einsätze</placeholder>
+                            </config>
+                        </TCEforms>
+                    </settings.widgetTitle>
+
+                    <settings.defaultStation>
+                        <TCEforms>
+                            <label>Standard-Ortsfeuerwehr</label>
+                            <config>
+                                <type>select</type>
+                                <renderType>selectSingle</renderType>
+                                <itemsProcFunc>Nkfire\RescueReports\UserFunctions\FlexFormStationItems->addPrimaryStations</itemsProcFunc>
+                                <items>
+                                    <numIndex index="0">
+                                        <numIndex index="0">-- alle Ortsfeuerwehren --</numIndex>
+                                        <numIndex index="1">0</numIndex>
+                                    </numIndex>
+                                </items>
+                                <minitems>0</minitems>
+                                <maxitems>1</maxitems>
+                                <size>1</size>
+                            </config>
+                        </TCEforms>
+                    </settings.defaultStation>
+
+                    <settings.maxCount>
+                        <TCEforms>
+                            <label>Anzahl der angezeigten Einsätze</label>
+                            <config>
+                                <type>input</type>
+                                <eval>int</eval>
+                                <size>5</size>
+                                <default>6</default>
+                                <placeholder>6</placeholder>
+                            </config>
+                        </TCEforms>
+                    </settings.maxCount>
+
+                    <settings.cardImageMode>
+                        <TCEforms>
+                            <label>LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:cards.imageMode</label>
+                            <config>
+                                <type>select</type>
+                                <renderType>selectSingle</renderType>
+                                <items>
+                                    <numIndex index="0">
+                                        <numIndex index="0">LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:cards.imageModeFormat</numIndex>
+                                        <numIndex index="1">format</numIndex>
+                                    </numIndex>
+                                    <numIndex index="1">
+                                        <numIndex index="0">LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:cards.imageModeServercrop</numIndex>
+                                        <numIndex index="1">servercrop</numIndex>
+                                    </numIndex>
+                                </items>
+                                <default>format</default>
+                            </config>
+                        </TCEforms>
+                    </settings.cardImageMode>
+
+                    <settings.cardImageRatio>
+                        <TCEforms>
+                            <label>LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:cards.imageRatio</label>
+                            <displayCond>FIELD:settings.cardImageMode:=:format</displayCond>
+                            <config>
+                                <type>select</type>
+                                <renderType>selectSingle</renderType>
+                                <items>
+                                    <numIndex index="0">
+                                        <numIndex index="0">16:9</numIndex>
+                                        <numIndex index="1">16 / 9</numIndex>
+                                    </numIndex>
+                                    <numIndex index="1">
+                                        <numIndex index="0">4:3</numIndex>
+                                        <numIndex index="1">4 / 3</numIndex>
+                                    </numIndex>
+                                    <numIndex index="2">
+                                        <numIndex index="0">1:1</numIndex>
+                                        <numIndex index="1">1 / 1</numIndex>
+                                    </numIndex>
+                                </items>
+                                <default>16 / 9</default>
+                            </config>
+                        </TCEforms>
+                    </settings.cardImageRatio>
+
+                    <settings.cardImageWidth>
+                        <TCEforms>
+                            <label>LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:cards.imageWidth</label>
+                            <displayCond>FIELD:settings.cardImageMode:=:servercrop</displayCond>
+                            <config>
+                                <type>input</type>
+                                <eval>int</eval>
+                                <range>
+                                    <lower>1</lower>
+                                    <upper>4000</upper>
+                                </range>
+                                <size>5</size>
+                                <default>800</default>
+                                <placeholder>z. B. 800</placeholder>
+                            </config>
+                        </TCEforms>
+                    </settings.cardImageWidth>
+
+                    <settings.cardImageHeight>
+                        <TCEforms>
+                            <label>LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:cards.imageHeight</label>
+                            <displayCond>FIELD:settings.cardImageMode:=:servercrop</displayCond>
+                            <config>
+                                <type>input</type>
+                                <eval>int</eval>
+                                <range>
+                                    <lower>1</lower>
+                                    <upper>4000</upper>
+                                </range>
+                                <size>5</size>
+                                <default>500</default>
+                                <placeholder>z. B. 500</placeholder>
+                            </config>
+                        </TCEforms>
+                    </settings.cardImageHeight>
+
+                    <settings.templateVariant>
+                        <TCEforms>
+                            <label>Design</label>
+                            <config>
+                                <type>select</type>
+                                <renderType>selectSingle</renderType>
+                                <items>
+                                    <numIndex index="0">
+                                        <numIndex index="0">Bootstrap</numIndex>
+                                        <numIndex index="1">cards-bootstrap</numIndex>
+                                    </numIndex>
+                                    <numIndex index="1">
+                                        <numIndex index="0">Foundation</numIndex>
+                                        <numIndex index="1">cards-foundation</numIndex>
+                                    </numIndex>
+                                </items>
+                                <default>cards-bootstrap</default>
+                            </config>
+                        </TCEforms>
+                    </settings.templateVariant>
+
+                    <settings.yearFilterDefault>
+                        <TCEforms>
+                            <label>Jahresfilter: Standardauswahl</label>
+                            <config>
+                                <type>select</type>
+                                <renderType>selectSingle</renderType>
+                                <items>
+                                    <numIndex index="0">
+                                        <numIndex index="0">Alle Jahre</numIndex>
+                                        <numIndex index="1">all</numIndex>
+                                    </numIndex>
+                                    <numIndex index="1">
+                                        <numIndex index="0">Aktuelles Jahr</numIndex>
+                                        <numIndex index="1">current</numIndex>
+                                    </numIndex>
+                                </items>
+                                <default>all</default>
+                            </config>
+                        </TCEforms>
+                    </settings.yearFilterDefault>
+
+                    <settings.detailPageUid>
+                        <TCEforms>
+                            <label>Seite für Einsatz-Detailansicht</label>
+                            <config>
+                                <type>group</type>
+                                <internal_type>db</internal_type>
+                                <allowed>pages</allowed>
+                                <size>1</size>
+                                <minitems>0</minitems>
+                                <maxitems>1</maxitems>
+                            </config>
+                        </TCEforms>
+                    </settings.detailPageUid>
+
+                    <settings.listPageUid>
+                        <TCEforms>
+                            <label>Seite der vollständigen Einsatzliste (für „Alle Einsätze"-Link)</label>
+                            <config>
+                                <type>group</type>
+                                <internal_type>db</internal_type>
+                                <allowed>pages</allowed>
+                                <size>1</size>
+                                <minitems>0</minitems>
+                                <maxitems>1</maxitems>
+                            </config>
+                        </TCEforms>
+                    </settings.listPageUid>
+
+                </el>
+            </ROOT>
+        </sheet>
+    </sheets>
+</T3DataStructure>

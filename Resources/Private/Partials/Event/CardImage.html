@@ -1,0 +1,13 @@
+<f:if condition="{imageClass} == 'card-img-servercrop'">
+    <f:then>
+        <f:image
+            image="{image}"
+            width="{settings.cardImageWidth}c"
+            height="{settings.cardImageHeight}c"
+            alt="{alt}"
+            class="card-img-top" />
+    </f:then>
+    <f:else>
+        <f:image image="{image}" alt="{alt}" class="card-img-top" />
+    </f:else>
+</f:if>
