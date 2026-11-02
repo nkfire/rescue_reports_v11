@@ -25,127 +25,126 @@
     <f:then>
       <div class="cards-grid row">
         <f:for each="{events}" as="event">
-          <div class="col-md-4 col-sm-6 col-xs-12 mb-4 rescue-card-item">
-            <div class="card h-100">
+          <div class="col-md-4 col-sm-6 col-xs-12 mb-4">
+            <f:link.action action="show" controller="Event" extensionName="RescueReports" pluginName="Eventlist" pageUid="{detailPageUid}" arguments="{event: event}" class="card card-link" style="text-decoration: none;">
+              <div class="card h-100">
 
-              <!-- Card Image (Hero) with Fallback -->
-              <div class="card-img-top overflow-hidden {cardImageClass}" style="{cardImageStyle}">
-                <f:if condition="{event.images}">
-                  <f:then>
-                    <f:for each="{event.images}" as="image" iteration="iteration">
-                      <f:if condition="{iteration.isFirst}">
-                        <f:render partial="Event/CardImage" arguments="{image: image, alt: event.title, settings: settings, imageClass: cardImageClass}" />
-                      </f:if>
-                    </f:for>
-                  </f:then>
-                  <f:else>
-                    <f:if condition="{event.enableKeywordEscalation}">
-                      <f:then>
-                        <f:for each="{event.keywordEscalation}" as="escalation" iteration="escIter">
-                          <f:if condition="{escIter.isFirst}">
-                            <f:if condition="{escalation.image}">
-                              <f:then>
-                                <f:render partial="Event/CardImage" arguments="{image: escalation.image, alt: escalation.title, settings: settings, imageClass: cardImageClass}" />
-                              </f:then>
-                              <f:else>
-                                <f:if condition="{escalation.category.image}">
-                                  <f:then>
-                                  <f:render partial="Event/CardImage" arguments="{image: escalation.category.image, alt: escalation.category.title, settings: settings, imageClass: cardImageClass}" />
-                                  </f:then>
-                                  <f:else>
-                                    <f:for each="{event.types}" as="type" iteration="typeIteration">
-                                      <f:if condition="{typeIteration.isFirst}">
-                                        <f:if condition="{type.image}">
-                                          <f:then>
-                                            <f:render partial="Event/CardImage" arguments="{image: type.image, alt: type.title, settings: settings, imageClass: cardImageClass}" />
-                                          </f:then>
-                                          <f:else>
-                                            <f:if condition="{type.category.image}">
-                                              <f:render partial="Event/CardImage" arguments="{image: type.category.image, alt: type.category.title, settings: settings, imageClass: cardImageClass}" />
-                                            </f:if>
-                                          </f:else>
-                                        </f:if>
-                                      </f:if>
-                                    </f:for>
-                                  </f:else>
-                                </f:if>
-                              </f:else>
-                            </f:if>
-                          </f:if>
-                        </f:for>
-                      </f:then>
-                      <f:else>
-                        <f:for each="{event.types}" as="type" iteration="typeIteration">
-                          <f:if condition="{typeIteration.isFirst}">
-                            <f:if condition="{type.image}">
-                              <f:then>
-                                <f:render partial="Event/CardImage" arguments="{image: type.image, alt: type.title, settings: settings, imageClass: cardImageClass}" />
-                              </f:then>
-                              <f:else>
-                                <f:if condition="{type.category.image}">
-                                  <f:render partial="Event/CardImage" arguments="{image: type.category.image, alt: type.category.title, settings: settings, imageClass: cardImageClass}" />
-                                </f:if>
-                              </f:else>
-                            </f:if>
-                          </f:if>
-                        </f:for>
-                      </f:else>
-                    </f:if>
-                  </f:else>
-                </f:if>
-              </div>
-
-              <!-- Card Body -->
-              <div class="card-body">
-
-                <!-- Title -->
-                <h2 class="card-title">{event.title}</h2>
-
-                <!-- Subtitle: Einsatzart/Erhöhung • Datum -->
-                <h3 class="card-subtitle mb-2">
-                  <f:if condition="{event.enableKeywordEscalation}">
+                <!-- Card Image (Hero) with Fallback -->
+                <div class="card-img-container {cardImageClass}" style="{cardImageStyle}">
+                  <f:if condition="{event.images}">
                     <f:then>
-                      <f:for each="{event.keywordEscalation}" as="escalation" iteration="escIter">
-                        <f:if condition="{escIter.isFirst}">
-                          {escalation.title} •
+                      <f:for each="{event.images}" as="image" iteration="iteration">
+                        <f:if condition="{iteration.isFirst}">
+                          <f:render partial="Event/CardImage" arguments="{image: image, alt: event.title, settings: settings, imageClass: cardImageClass}" />
                         </f:if>
                       </f:for>
                     </f:then>
                     <f:else>
-                      <f:if condition="{event.types}">
-                        <f:for each="{event.types}" as="type" iteration="typeIter">
-                          <f:if condition="{typeIter.isFirst}">
-                            {type.title} •
-                          </f:if>
-                        </f:for>
+                      <f:if condition="{event.enableKeywordEscalation}">
+                        <f:then>
+                          <f:for each="{event.keywordEscalation}" as="escalation" iteration="escIter">
+                            <f:if condition="{escIter.isFirst}">
+                              <f:if condition="{escalation.image}">
+                                <f:then>
+                                  <f:render partial="Event/CardImage" arguments="{image: escalation.image, alt: escalation.title, settings: settings, imageClass: cardImageClass}" />
+                                </f:then>
+                                <f:else>
+                                  <f:if condition="{escalation.category.image}">
+                                    <f:then>
+                                      <f:render partial="Event/CardImage" arguments="{image: escalation.category.image, alt: escalation.category.title, settings: settings, imageClass: cardImageClass}" />
+                                    </f:then>
+                                    <f:else>
+                                      <f:for each="{event.types}" as="type" iteration="typeIteration">
+                                        <f:if condition="{typeIteration.isFirst}">
+                                          <f:if condition="{type.image}">
+                                            <f:then>
+                                              <f:render partial="Event/CardImage" arguments="{image: type.image, alt: type.title, settings: settings, imageClass: cardImageClass}" />
+                                            </f:then>
+                                            <f:else>
+                                              <f:if condition="{type.category.image}">
+                                                <f:render partial="Event/CardImage" arguments="{image: type.category.image, alt: type.category.title, settings: settings, imageClass: cardImageClass}" />
+                                              </f:if>
+                                            </f:else>
+                                          </f:if>
+                                        </f:if>
+                                      </f:for>
+                                    </f:else>
+                                  </f:if>
+                                </f:else>
+                              </f:if>
+                            </f:if>
+                          </f:for>
+                        </f:then>
+                        <f:else>
+                          <f:for each="{event.types}" as="type" iteration="typeIteration">
+                            <f:if condition="{typeIteration.isFirst}">
+                              <f:if condition="{type.image}">
+                                <f:then>
+                                  <f:render partial="Event/CardImage" arguments="{image: type.image, alt: type.title, settings: settings, imageClass: cardImageClass}" />
+                                </f:then>
+                                <f:else>
+                                  <f:if condition="{type.category.image}">
+                                    <f:render partial="Event/CardImage" arguments="{image: type.category.image, alt: type.category.title, settings: settings, imageClass: cardImageClass}" />
+                                  </f:if>
+                                </f:else>
+                              </f:if>
+                            </f:if>
+                          </f:for>
+                        </f:else>
                       </f:if>
                     </f:else>
                   </f:if>
-                  <f:format.date format="d.m.Y">{event.start}</f:format.date>
-                </h3>
+                </div>
 
-                <!-- Description Excerpt -->
-                <f:if condition="{event.description}">
-                  <p class="card-text">
-                    <f:format.crop maxCharacters="120" respectWordBoundaries="true">
-                      <f:format.stripTags>{event.description}</f:format.stripTags>
-                    </f:format.crop>
+                <!-- Card Body -->
+                <div class="rescue-card card-body d-flex flex-column">
+
+                  <!-- Meta Info: Einsatz • Type/Escalation • Date -->
+                  <div class="card-meta text-muted small mb-2" style="font-size: 0.85rem;">
+                    Einsatz
+                    <f:if condition="{event.enableKeywordEscalation}">
+                      <f:then>
+                        <f:for each="{event.keywordEscalation}" as="escalation" iteration="escIter">
+                          <f:if condition="{escIter.isFirst}">
+                            • <strong>{escalation.title}</strong>
+                          </f:if>
+                        </f:for>
+                      </f:then>
+                      <f:else>
+                        <f:if condition="{event.types}">
+                          <f:for each="{event.types}" as="type" iteration="typeIter">
+                            <f:if condition="{typeIter.isFirst}">
+                              • <strong>{type.title}</strong>
+                            </f:if>
+                          </f:for>
+                        </f:if>
+                      </f:else>
+                    </f:if>
+                    • <f:format.date format="d.m.Y">{event.start}</f:format.date>
+                  </div>
+
+                  <!-- Title -->
+                  <h5 class="card-title mb-2">
+                    {event.title}
+                  </h5>
+
+                  <!-- Description Excerpt -->
+                  <p class="card-text flex-grow-1" style="font-size: 0.9rem;">
+                    <f:if condition="{event.description}">
+                      <f:format.crop maxCharacters="120" respectWordBoundaries="true">
+                        <f:format.stripTags>{event.description}</f:format.stripTags>
+                      </f:format.crop>
+                    </f:if>
                   </p>
-                </f:if>
 
+                  <!-- Footer: Link Badge -->
+                  <div class="card-footer bg-transparent border-0 p-0 mt-3">
+                    <span class=""><f:translate key="LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:cards.readMore" /></span>
+                  </div>
+
+                </div>
               </div>
-
-              <!-- Footer: stretched Link -->
-              <div class="card-footer">
-                <f:link.page
-                  pageUid="{detailPageUid}"
-                  additionalParams="{tx_rescuereports_eventlist: {controller: 'Event', action: 'show', event: event.uid}}"
-                  class="stretched-link btn btn-primary">
-                  <span class="btn-text"><f:translate key="LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:cards.readMore" /></span>
-                </f:link.page>
-              </div>
-
-            </div>
+            </f:link.action>
           </div>
         </f:for>
       </div>

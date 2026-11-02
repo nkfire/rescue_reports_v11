@@ -427,76 +427,84 @@ class EventRepository extends Repository
      *   ...
      * ]
      */
-    public function getYearlyStatistics(int $stationUid = 0, int $maxYears = 0): array
+    public function getYearlyStatistics(
+        int $stationUid = 0,
+        int $maxYears = 0,
+        bool $includeLongestOperation = false,
+        bool $includeShortestOperation = false
+    ): array
     {
-        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getQueryBuilderForTable('tx_rescuereports_domain_model_event');
-
-        $queryBuilder->getRestrictions()->removeAll();
-
-        $queryBuilder
-            ->select('cat.uid AS cat_uid', 'cat.title AS cat_title', 'cat.color AS cat_color')
-            ->addSelectLiteral(
-                'YEAR(e.start) AS year',
-                'COUNT(DISTINCT e.uid) AS cnt',
-                'ROUND(AVG(TIMESTAMPDIFF(SECOND, e.start, e.end))) AS avg_dur_sec'
-            )
-            ->from('tx_rescuereports_domain_model_event', 'e')
-            ->leftJoin('e', 'tx_rescuereports_event_type_mm', 'tmm', 'e.uid = tmm.uid_local')
-            ->leftJoin('tmm', 'tx_rescuereports_domain_model_type', 't', 'tmm.uid_foreign = t.uid')
-            ->leftJoin('t', 'tx_rescuereports_domain_model_category', 'cat', 't.category = cat.uid')
-            ->where(
-                $queryBuilder->expr()->eq('e.deleted', $queryBuilder->createNamedParameter(0, PDO::PARAM_INT)),
-                $queryBuilder->expr()->eq('e.hidden', $queryBuilder->createNamedParameter(0, PDO::PARAM_INT)),
-                $queryBuilder->expr()->isNotNull('e.start')
-            );
-
-        if ($stationUid > 0) {
-            $queryBuilder
-                ->innerJoin('e', 'tx_rescuereports_event_station_mm', 'smm', 'e.uid = smm.uid_local')
-                ->andWhere(
-                    $queryBuilder->expr()->eq('smm.uid_foreign', $queryBuilder->createNamedParameter($stationUid, PDO::PARAM_INT))
-                );
-        }
-
-        $rows = $queryBuilder
-            ->groupBy('year', 'cat.uid')
-            ->orderBy('year', 'DESC')
-            ->addOrderBy('cat.title', 'ASC')
-            ->executeQuery()
-            ->fetchAllAssociative();
-
-        // Aufbau: year -> categories[] + total
+        $rows = $this->getEffectiveStatisticsRows($stationUid);
         $raw = [];
+        $typeCountsByYearAndCategory = [];
+        $durationEventKeysByYearAndCategory = [];
+
         foreach ($rows as $row) {
-            $year = (int)$row['year'];
-            if (!isset($raw[$year])) {
-                $raw[$year] = [];
+            $year = (int)($row['year'] ?? 0);
+            if ($year <= 0) {
+                continue;
             }
-            $raw[$year][] = [
-                'uid'   => (int)$row['cat_uid'],
-                'title' => (string)($row['cat_title'] ?: '– ohne Kategorie –'),
-                'color' => (string)($row['cat_color'] ?: '#95a5a6'),
-                'count'       => (int)$row['cnt'],
-                'avg_dur_sec' => isset($row['avg_dur_sec']) && $row['avg_dur_sec'] !== null ? (int)$row['avg_dur_sec'] : null,
-            ];
+
+            $useKeywordEscalation = (int)($row['enable_keyword_escalation'] ?? 0) === 1
+                && (int)($row['keyword_uid'] ?? 0) > 0;
+
+            $categoryUid = (int)($useKeywordEscalation ? ($row['keyword_cat_uid'] ?? 0) : ($row['type_cat_uid'] ?? 0));
+            $categoryTitle = trim((string)($useKeywordEscalation ? ($row['keyword_cat_title'] ?? '') : ($row['type_cat_title'] ?? '')));
+            $categoryColor = trim((string)($useKeywordEscalation ? ($row['keyword_cat_color'] ?? '') : ($row['type_cat_color'] ?? '')));
+            $effectiveTypeTitle = trim((string)($useKeywordEscalation ? ($row['keyword_title'] ?? '') : ($row['type_title'] ?? '')));
+            $eventUid = (int)($row['uid'] ?? 0);
+            $durationSeconds = max(0, (int)($row['duration_sec'] ?? 0));
+
+            if (!isset($raw[$year][$categoryUid])) {
+                $raw[$year][$categoryUid] = [
+                    'uid' => $categoryUid,
+                    'title' => $categoryTitle !== '' ? $categoryTitle : '– ohne Kategorie –',
+                    'color' => $categoryColor !== '' ? $categoryColor : '#95a5a6',
+                    'count' => 0,
+                    'total_dur_sec' => 0,
+                ];
+            }
+
+            $raw[$year][$categoryUid]['count']++;
+
+            if (
+                $eventUid > 0
+                && $durationSeconds > 0
+                && !isset($durationEventKeysByYearAndCategory[$year][$categoryUid][$eventUid])
+            ) {
+                $raw[$year][$categoryUid]['total_dur_sec'] += $durationSeconds;
+                $durationEventKeysByYearAndCategory[$year][$categoryUid][$eventUid] = true;
+            }
+
+            if ($effectiveTypeTitle !== '') {
+                $typeCountsByYearAndCategory[$year][$categoryUid][$effectiveTypeTitle] =
+                    ($typeCountsByYearAndCategory[$year][$categoryUid][$effectiveTypeTitle] ?? 0) + 1;
+            }
         }
 
-        // Einsatzarten je Jahr/Kategorie aus tatsächlich vorkommenden Datensätzen ermitteln
-        $typesByYearAndCategory = $this->getTypeStatsByYearAndCategory($stationUid);
+        $typesByYearAndCategory = [];
 
-        // Gesamtzahl + Prozentwerte + SVG-Tortendiagramm berechnen
+        foreach ($raw as $year => $categories) {
+            uasort(
+                $categories,
+                static fn(array $left, array $right): int => strcasecmp($left['title'], $right['title'])
+            );
+            $raw[$year] = array_values($categories);
+        }
+
         $statistics = [];
         foreach ($raw as $year => $categories) {
             $total = array_sum(array_column($categories, 'count'));
             foreach ($categories as &$cat) {
                 $cat['percent']     = $total > 0 ? round($cat['count'] / $total * 100, 1) : 0.0;
-                $cat['avgDuration'] = $this->formatDurationSeconds($cat['avg_dur_sec'] ?? null);
-                $cat['types']       = $typesByYearAndCategory[$year][$cat['uid']] ?? [];
-                foreach ($cat['types'] as &$type) {
-                    $type['percent'] = $cat['count'] > 0 ? round($type['count'] / $cat['count'] * 100, 1) : 0.0;
-                }
-                unset($type);
+                $cat['totalDuration'] = $this->formatDurationSeconds($cat['total_dur_sec'] ?? null);
+                $cat['avgDuration'] = $cat['count'] > 0
+                    ? $this->formatDurationSeconds((int)(($cat['total_dur_sec'] ?? 0) / $cat['count']))
+                    : '—';
+                $cat['types']       = $this->buildTypeStatistics(
+                    $typeCountsByYearAndCategory[$year][$cat['uid']] ?? [],
+                    $cat['count']
+                );
             }
             unset($cat);
 
@@ -541,6 +549,7 @@ class EventRepository extends Repository
                 'total'             => $total,
                 'categories'        => $categories,
                 'svgPaths'          => $svgPaths,
+                'yearTotalDuration' => '—',
             ];
         }
 
@@ -549,6 +558,22 @@ class EventRepository extends Repository
         foreach ($yearlyTotals as $year => $totalSec) {
             if (isset($statistics[$year])) {
                 $statistics[$year]['yearTotalDuration'] = $this->formatDurationSeconds($totalSec);
+            }
+        }
+
+        if ($includeLongestOperation || $includeShortestOperation) {
+            foreach ($this->getYearlyDurationExtremes($stationUid) as $year => $extremes) {
+                if (!isset($statistics[$year])) {
+                    continue;
+                }
+
+                $statistics[$year]['durationExtremes'] = [];
+                if ($includeLongestOperation && isset($extremes['longest'])) {
+                    $statistics[$year]['durationExtremes']['longest'] = $extremes['longest'];
+                }
+                if ($includeShortestOperation && isset($extremes['shortest'])) {
+                    $statistics[$year]['durationExtremes']['shortest'] = $extremes['shortest'];
+                }
             }
         }
 
@@ -798,7 +823,7 @@ class EventRepository extends Repository
         $queryBuilder
             ->addSelectLiteral(
                 'YEAR(e.start) AS year',
-                'SUM(TIMESTAMPDIFF(SECOND, e.start, e.end)) AS total_sec'
+                'SUM(CASE WHEN e.end IS NOT NULL AND e.end >= e.start THEN TIMESTAMPDIFF(SECOND, e.start, e.end) ELSE 0 END) AS total_sec'
             )
             ->from('tx_rescuereports_domain_model_event', 'e')
             ->where(
@@ -829,6 +854,147 @@ class EventRepository extends Repository
         }
 
         return $result;
+    }
+
+    /**
+     * @return array<int,array{longest?:array<string,mixed>,shortest?:array<string,mixed>}>
+     */
+    private function getYearlyDurationExtremes(int $stationUid = 0): array
+    {
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('tx_rescuereports_domain_model_event');
+        $queryBuilder->getRestrictions()->removeAll();
+
+        $queryBuilder
+            ->select('e.uid', 'e.title', 'e.start', 'e.end')
+            ->from('tx_rescuereports_domain_model_event', 'e')
+            ->where(
+                $queryBuilder->expr()->eq('e.deleted', $queryBuilder->createNamedParameter(0, PDO::PARAM_INT)),
+                $queryBuilder->expr()->eq('e.hidden', $queryBuilder->createNamedParameter(0, PDO::PARAM_INT)),
+                $queryBuilder->expr()->isNotNull('e.start'),
+                $queryBuilder->expr()->isNotNull('e.end')
+            )
+            ->orderBy('e.start', 'ASC')
+            ->addOrderBy('e.uid', 'ASC');
+
+        if ($stationUid > 0) {
+            $queryBuilder
+                ->innerJoin('e', 'tx_rescuereports_event_station_mm', 'smm', 'e.uid = smm.uid_local')
+                ->andWhere(
+                    $queryBuilder->expr()->eq('smm.uid_foreign', $queryBuilder->createNamedParameter($stationUid, PDO::PARAM_INT))
+                );
+        }
+
+        $extremes = [];
+        foreach ($queryBuilder->executeQuery()->fetchAllAssociative() as $row) {
+            $startTimestamp = $this->normalizeTimestamp($row['start'] ?? null);
+            $durationSeconds = $this->calculateDurationSeconds($row['start'] ?? null, $row['end'] ?? null);
+            if ($startTimestamp === null || $durationSeconds === null || $durationSeconds <= 0) {
+                continue;
+            }
+
+            $year = (int)date('Y', $startTimestamp);
+            $entry = [
+                'uid' => (int)($row['uid'] ?? 0),
+                'title' => trim((string)($row['title'] ?? '')) ?: 'Ohne Titel',
+                'date' => date('d.m.Y', $startTimestamp),
+                'duration' => $this->formatDurationSeconds($durationSeconds),
+                'durationSeconds' => $durationSeconds,
+            ];
+
+            if (!isset($extremes[$year]['longest']) || $durationSeconds > $extremes[$year]['longest']['durationSeconds']) {
+                $extremes[$year]['longest'] = $entry;
+            }
+            if (!isset($extremes[$year]['shortest']) || $durationSeconds < $extremes[$year]['shortest']['durationSeconds']) {
+                $extremes[$year]['shortest'] = $entry;
+            }
+        }
+
+        return $extremes;
+    }
+
+    /**
+     * @param int[] $stationUids
+     * @return array{year:int,stations:array<int,array{count:int,durationSeconds:int,duration:string}>,totalDurationSeconds:int,totalDuration:string}
+     */
+    public function getStationYearOverview(array $stationUids, int $year): array
+    {
+        $stationUids = array_values(array_filter(
+            array_map('intval', $stationUids),
+            static function (int $stationUid): bool {
+                return $stationUid > 0;
+            }
+        ));
+
+        $stations = [];
+        foreach ($stationUids as $stationUid) {
+            $stations[$stationUid] = ['count' => 0, 'durationSeconds' => 0, 'duration' => '—'];
+        }
+
+        if ($stations === [] || $year <= 0) {
+            return [
+                'year' => $year,
+                'stations' => $stations,
+                'totalDurationSeconds' => 0,
+                'totalDuration' => '—',
+            ];
+        }
+
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('tx_rescuereports_domain_model_event');
+        $queryBuilder->getRestrictions()->removeAll();
+        $yearStart = sprintf('%d-01-01 00:00:00', $year);
+        $nextYearStart = sprintf('%d-01-01 00:00:00', $year + 1);
+
+        $queryBuilder
+            ->select('e.uid AS event_uid', 'e.start', 'e.end', 'smm.uid_foreign AS station_uid')
+            ->from('tx_rescuereports_domain_model_event', 'e')
+            ->innerJoin('e', 'tx_rescuereports_event_station_mm', 'smm', 'e.uid = smm.uid_local')
+            ->where(
+                $queryBuilder->expr()->eq('e.deleted', $queryBuilder->createNamedParameter(0, PDO::PARAM_INT)),
+                $queryBuilder->expr()->eq('e.hidden', $queryBuilder->createNamedParameter(0, PDO::PARAM_INT)),
+                $queryBuilder->expr()->gte('e.start', $queryBuilder->createNamedParameter($yearStart)),
+                $queryBuilder->expr()->lt('e.start', $queryBuilder->createNamedParameter($nextYearStart))
+            );
+
+        $stationConstraints = [];
+        foreach ($stationUids as $stationUid) {
+            $stationConstraints[] = $queryBuilder->expr()->eq(
+                'smm.uid_foreign',
+                $queryBuilder->createNamedParameter($stationUid, PDO::PARAM_INT)
+            );
+        }
+        $queryBuilder->andWhere($queryBuilder->expr()->or(...$stationConstraints));
+
+        $seenEvents = [];
+        foreach ($queryBuilder->executeQuery()->fetchAllAssociative() as $row) {
+            $stationUid = (int)($row['station_uid'] ?? 0);
+            $eventUid = (int)($row['event_uid'] ?? 0);
+            if ($stationUid <= 0 || $eventUid <= 0 || !isset($stations[$stationUid]) || isset($seenEvents[$stationUid][$eventUid])) {
+                continue;
+            }
+
+            $seenEvents[$stationUid][$eventUid] = true;
+            $stations[$stationUid]['count']++;
+            $durationSeconds = $this->calculateDurationSeconds($row['start'] ?? null, $row['end'] ?? null);
+            if ($durationSeconds !== null) {
+                $stations[$stationUid]['durationSeconds'] += $durationSeconds;
+            }
+        }
+
+        $totalDurationSeconds = 0;
+        foreach ($stations as &$station) {
+            $station['duration'] = $this->formatDurationSeconds($station['durationSeconds']);
+            $totalDurationSeconds += $station['durationSeconds'];
+        }
+        unset($station);
+
+        return [
+            'year' => $year,
+            'stations' => $stations,
+            'totalDurationSeconds' => $totalDurationSeconds,
+            'totalDuration' => $this->formatDurationSeconds($totalDurationSeconds),
+        ];
     }
 
     /**
@@ -880,6 +1046,141 @@ class EventRepository extends Repository
         return $hours > 0
             ? sprintf('%d Std. %02d Min.', $hours, $minutes)
             : sprintf('%d Min.', $minutes);
+    }
+
+    private function calculateDurationSeconds($startValue, $endValue): ?int
+    {
+        $startTimestamp = $this->normalizeTimestamp($startValue);
+        $endTimestamp = $this->normalizeTimestamp($endValue);
+
+        if ($startTimestamp === null || $endTimestamp === null || $endTimestamp < $startTimestamp) {
+            return null;
+        }
+
+        return $endTimestamp - $startTimestamp;
+    }
+
+    private function normalizeTimestamp($value): ?int
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->getTimestamp();
+        }
+
+        if (!is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        $timestamp = strtotime($value);
+        return $timestamp === false ? null : $timestamp;
+    }
+
+    /**
+     * Lädt die Rohdaten für die Statistik und liefert pro Einsatz genau einen Typ-Zweig:
+     * bei aktivierter Stichworterhöhung den Escalation-Typ, sonst den normalen Alarmtyp.
+     */
+    private function getEffectiveStatisticsRows(int $stationUid = 0): array
+    {
+        $qb = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('tx_rescuereports_domain_model_event');
+
+        $qb->getRestrictions()->removeAll();
+
+        $qb->select(
+            'e.uid',
+            'e.start',
+            'e.end',
+            'e.enable_keyword_escalation',
+            'type_t.uid AS type_uid',
+            'type_t.title AS type_title',
+            'type_cat.uid AS type_cat_uid',
+            'type_cat.title AS type_cat_title',
+            'type_cat.color AS type_cat_color',
+            'keyword_t.uid AS keyword_uid',
+            'keyword_t.title AS keyword_title',
+            'keyword_cat.uid AS keyword_cat_uid',
+            'keyword_cat.title AS keyword_cat_title',
+            'keyword_cat.color AS keyword_cat_color'
+        )
+            ->addSelectLiteral(
+                'YEAR(e.start) AS year',
+                'CASE WHEN e.end IS NOT NULL AND e.end >= e.start THEN TIMESTAMPDIFF(SECOND, e.start, e.end) ELSE 0 END AS duration_sec'
+            )
+            ->from('tx_rescuereports_domain_model_event', 'e')
+            ->leftJoin('e', 'tx_rescuereports_event_type_mm', 'tmm', 'e.uid = tmm.uid_local')
+            ->leftJoin('tmm', 'tx_rescuereports_domain_model_type', 'type_t', 'tmm.uid_foreign = type_t.uid')
+            ->leftJoin('type_t', 'tx_rescuereports_domain_model_category', 'type_cat', 'type_t.category = type_cat.uid')
+            ->leftJoin('e', 'tx_rescuereports_event_keyword_escalation_mm', 'kmm', 'e.uid = kmm.uid_local')
+            ->leftJoin('kmm', 'tx_rescuereports_domain_model_type', 'keyword_t', 'kmm.uid_foreign = keyword_t.uid')
+            ->leftJoin('keyword_t', 'tx_rescuereports_domain_model_category', 'keyword_cat', 'keyword_t.category = keyword_cat.uid')
+            ->where(
+                $qb->expr()->eq('e.deleted', $qb->createNamedParameter(0, PDO::PARAM_INT)),
+                $qb->expr()->eq('e.hidden', $qb->createNamedParameter(0, PDO::PARAM_INT)),
+                $qb->expr()->isNotNull('e.start')
+            )
+            ->orderBy('year', 'DESC')
+            ->addOrderBy('e.uid', 'DESC');
+
+        $typeVisibilityConstraint = $qb->expr()->or(
+            $qb->expr()->isNull('type_t.uid'),
+            $qb->expr()->and(
+                $qb->expr()->eq('type_t.deleted', $qb->createNamedParameter(0, PDO::PARAM_INT)),
+                $qb->expr()->eq('type_t.hidden', $qb->createNamedParameter(0, PDO::PARAM_INT))
+            )
+        );
+        $keywordVisibilityConstraint = $qb->expr()->or(
+            $qb->expr()->isNull('keyword_t.uid'),
+            $qb->expr()->and(
+                $qb->expr()->eq('keyword_t.deleted', $qb->createNamedParameter(0, PDO::PARAM_INT)),
+                $qb->expr()->eq('keyword_t.hidden', $qb->createNamedParameter(0, PDO::PARAM_INT))
+            )
+        );
+
+        $qb->andWhere($typeVisibilityConstraint, $keywordVisibilityConstraint);
+
+        if ($stationUid > 0) {
+            $qb->innerJoin('e', 'tx_rescuereports_event_station_mm', 'smm', 'e.uid = smm.uid_local')
+                ->andWhere(
+                    $qb->expr()->eq('smm.uid_foreign', $qb->createNamedParameter($stationUid, PDO::PARAM_INT))
+                );
+        }
+
+        return $qb->executeQuery()->fetchAllAssociative();
+    }
+
+    /**
+     * @param array<string,int> $typeCounts
+     * @return array<int,array{title:string,count:int,percent:float}>
+     */
+    private function buildTypeStatistics(array $typeCounts, int $categoryCount): array
+    {
+        if ($typeCounts === []) {
+            return [];
+        }
+
+        arsort($typeCounts);
+
+        $result = [];
+        foreach ($typeCounts as $title => $count) {
+            $result[] = [
+                'title' => $title,
+                'count' => $count,
+                'percent' => $categoryCount > 0 ? round($count / $categoryCount * 100, 1) : 0.0,
+            ];
+        }
+
+        usort(
+            $result,
+            static function (array $left, array $right): int {
+                $countCompare = $right['count'] <=> $left['count'];
+                if ($countCompare !== 0) {
+                    return $countCompare;
+                }
+
+                return strcasecmp($left['title'], $right['title']);
+            }
+        );
+
+        return $result;
     }
 
     /**

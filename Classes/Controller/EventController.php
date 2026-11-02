@@ -4,20 +4,20 @@ namespace Nkfire\RescueReports\Controller;
 use Nkfire\RescueReports\Domain\Model\Event;
 use Nkfire\RescueReports\Domain\Repository\EventRepository;
 use Nkfire\RescueReports\Domain\Repository\StationRepository;
-use Nkfire\RescueReports\Utility\CompactListBuilder;
+use Nkfire\RescueReports\PageTitle\EventPageTitleProvider;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use PDO;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\MetaTag\MetaTagManagerRegistry;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Service\ImageService;
 
 class EventController extends ActionController
 {
     protected EventRepository $eventRepository;
     protected StationRepository $stationRepository;
-
-    /** Cards-Widget: Einsätze mit deaktivierter Detailansicht ausblenden */
     protected bool $excludeDisabledDetail = false;
 
     public function __construct(EventRepository $eventRepository)
@@ -44,10 +44,12 @@ class EventController extends ActionController
         $dateFromValue = $this->settings['dateFrom'] ?? null;
         $dateToValue   = $this->settings['dateTo'] ?? null;
         $enableSearch = (bool)($this->settings['enableSearch'] ?? false);
-        $templateVariant     = (string)($this->settings['templateVariant'] ?? 'bootstrap');
+        $templateVariant     = $this->normalizeTemplateVariant((string)($this->settings['templateVariant'] ?? 'bootstrap'));
         $showStatistics      = (bool)($this->settings['showStatistics'] ?? false);
         $statisticsPosition  = (string)($this->settings['statisticsPosition'] ?? 'below');
         $statisticsYears     = (int)($this->settings['statisticsYears'] ?? 0);
+        $showLongestOperation = (bool)($this->settings['showLongestOperation'] ?? false);
+        $showShortestOperation = (bool)($this->settings['showShortestOperation'] ?? false);
         $enableYearFilter    = (bool)($this->settings['enableYearFilter'] ?? false);
         $enableDateFilter    = (bool)($this->settings['enableDateFilter'] ?? false);
         $showStationFilter   = (bool)($this->settings['showStationFilter'] ?? true);
@@ -60,6 +62,9 @@ class EventController extends ActionController
         $selectedYear = ($year === null)
             ? ($yearFilterDefault === 'all' ? 0 : (int)date('Y'))
             : (int)($year ?? 0);
+
+        $hasExplicitDateFilter = $enableDateFilter
+            && (($dateFrom !== null && $dateFrom !== '') || ($dateTo !== null && $dateTo !== ''));
 
         // Request-Datumswerte überschreiben FlexForm-Einstellung wenn Datumsfilter aktiv
         if ($enableDateFilter) {
@@ -81,6 +86,8 @@ class EventController extends ActionController
         $listPageUid   = $this->normalizeDetailPageUid($this->settings['listPageUid'] ?? null);
         $widgetTitle   = trim((string)($this->settings['widgetTitle'] ?? ''));
 
+        $viewSettings = $this->normalizeCardImageSettings($this->settings);
+
         $defaultStationUid = (int)($this->settings['defaultStation'] ?? 0);
         $selectedStationUid = $this->normalizeRecordUid($station);
         $activeStationUid = $selectedStationUid > 0 ? $selectedStationUid : $defaultStationUid;
@@ -100,41 +107,43 @@ class EventController extends ActionController
             }
         }
 
-        // Backward-Compat: alte Werte aus bestehenden DB-Einträgen auf neue Namen mappen
-        $templateVariantCompat = [
-            'newdesign'      => 'bootstrap',
-            'standard'       => 'bootstrap',
-            'sidebar'        => 'sidebar-foundation',
-            'newdesignsidebar' => 'sidebar-bootstrap',
-        ];
-        if (isset($templateVariantCompat[$templateVariant])) {
-            $templateVariant = $templateVariantCompat[$templateVariant];
-        }
-
-        $allowedTemplateVariants = [
-            'bootstrap',
-            'foundation',
-            'sidebar-bootstrap',
-            'sidebar-foundation',
-        ];
-
-        if (!in_array($templateVariant, $allowedTemplateVariants, true)) {
-            $templateVariant = 'bootstrap';
-        }
-
         $searchWord = trim((string)($searchWord ?? ''));
+        $submittedSearchWord = $searchWord;
+        $searchDateRange = $this->extractDateRangeFromSearchTerm($searchWord);
 
         $dateFrom = $dateFromValue;
         $dateTo = $dateToValue;
 
+        // Explicit date inputs are more specific than the default year selection.
+        if ($hasExplicitDateFilter) {
+            $dateFrom = $dateFromValue;
+            $dateTo = $dateToValue;
         // Jahresauswahl überschreibt FlexForm-Datumsbereich (unabhängig von enableYearFilter)
-        if ($selectedYear > 0) {
+        } elseif ($selectedYear > 0) {
             $dateFrom = $selectedYear . '-01-01';
             $dateTo   = $selectedYear . '-12-31';
         } elseif ($yearFilterDefault === 'all' || $enableYearFilter) {
             // "Alle Jahre" als Standard oder Jahresfilter aktiv → FlexForm-Datumseinschränkungen aufheben
             $dateFrom = null;
             $dateTo   = null;
+        }
+
+        if ($searchDateRange !== null) {
+            // Keep the page's configured year/date scope and narrow it by the search date.
+            if (!$hasExplicitDateFilter) {
+                $currentDateFrom = $this->createDateTimeFromFlexFormValue($dateFrom);
+                $currentDateTo = $this->createDateTimeFromFlexFormValue($dateTo);
+                $searchDateFrom = new \DateTime($searchDateRange['from']);
+                $searchDateTo = new \DateTime($searchDateRange['to']);
+
+                $dateFrom = ($currentDateFrom instanceof \DateTime && $currentDateFrom > $searchDateFrom)
+                    ? $currentDateFrom->format('Y-m-d')
+                    : $searchDateRange['from'];
+                $dateTo = ($currentDateTo instanceof \DateTime && $currentDateTo < $searchDateTo)
+                    ? $currentDateTo->format('Y-m-d')
+                    : $searchDateRange['to'];
+            }
+            $searchWord = '';
         }
 
         $availableYears = $enableYearFilter
@@ -168,6 +177,17 @@ class EventController extends ActionController
         }
 
         $eventItems = $this->buildEventItemsForStations($events, $activeStationUid);
+        $hasSearchQuery = $enableSearch && ($submittedSearchWord !== '' || $hasExplicitDateFilter);
+        $searchResultContext = '';
+        if ($submittedSearchWord !== '') {
+            $searchResultContext = 'für „' . $submittedSearchWord . '“';
+        } elseif ($hasExplicitDateFilter) {
+            $from = $dateFromDt instanceof \DateTimeInterface ? $dateFromDt->format('d.m.Y') : '';
+            $to = $dateToDt instanceof \DateTimeInterface ? $dateToDt->format('d.m.Y') : '';
+            $searchResultContext = $from !== '' && $to !== ''
+                ? 'für den Zeitraum ' . $from . ' bis ' . $to
+                : ($from !== '' ? 'ab ' . $from : 'bis ' . $to);
+        }
         // Gruppierung nach Jahr wenn "Alle Jahre" angezeigt werden (unabhängig von enableYearFilter)
         $eventItemsByYear = ($selectedYear === 0)
             ? $this->groupEventItemsByYear($eventItems)
@@ -176,96 +196,18 @@ class EventController extends ActionController
 
         $statistics = [];
         if ($showStatistics && in_array($templateVariant, ['bootstrap', 'foundation'], true)) {
-            $statistics = $this->eventRepository->getYearlyStatistics($activeStationUid, $statisticsYears);
+            $statistics = $this->eventRepository->getYearlyStatistics(
+                $activeStationUid,
+                $statisticsYears,
+                $showLongestOperation,
+                $showShortestOperation
+            );
             // Wenn ein konkretes Jahr ausgewählt ist, nur dieses Jahr in der Statistik anzeigen
             if ($selectedYear > 0 && !empty($statistics)) {
                 $statistics = array_intersect_key($statistics, [$selectedYear => null]);
             }
             if (!empty($statistics)) {
-                $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
-                $pageRenderer->addCssInlineBlock(
-                    'rescueStatisticsLayout',
-                    '.rescue-statistics__layout{display:flex;gap:2rem;align-items:flex-start;flex-wrap:wrap;margin:1rem 0 2rem;}'
-                    . '.rescue-statistics__chart-wrap{flex:0 0 220px;}'
-                    . '.rescue-statistics__table-wrap{flex:1 1 300px;}'
-                    . '.rescue-statistics__table{width:100%;border-collapse:collapse;}'
-                    . '.rescue-statistics__table th,.rescue-statistics__table td{padding:.35rem .6rem;border-bottom:1px solid #ddd;vertical-align:middle;}'
-                    . '.rescue-statistics__num{text-align:right;white-space:nowrap;}'
-                    . '.rescue-statistics__dot{display:inline-block;width:14px;height:14px;border-radius:50%;}'
-                    . '.rescue-statistics__total{font-size:.85em;font-weight:normal;color:#666;margin-left:.5rem;}'
-                    . '.rescue-statistics__year-title{margin-bottom:.25rem;}'
-                    . '.rescue-statistics__compare{font-size:.85em;color:#666;margin-top:.5rem;}'
-                );
-                $pageRenderer->addCssInlineBlock(
-                    'rescueStatisticsPie',
-                    '.rescue-statistics svg path,.rescue-statistics svg circle{'
-                    . 'transition:transform .15s ease-out;cursor:pointer;transform-origin:110px 110px;}'
-                    . '.rescue-statistics svg path:hover,.rescue-statistics svg circle:hover{'
-                    . 'transform:scale(1.08);}'
-                );
-                $pageRenderer->addCssInlineBlock(
-                    'rescueStatisticsPieTooltip',
-                    '.pie-wrap{position:relative;display:inline-block;}'
-                    . '.pie-tooltip{display:none;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);'
-                    .   'min-width:0;width:max-content;max-width:min(360px,calc(100vw - 20px));'
-                    .   'background:rgba(255,255,255,.97);border:1px solid #ddd;border-radius:4px;'
-                    .   'padding:6px 10px;z-index:20;box-shadow:0 2px 6px rgba(0,0,0,.15);'
-                    .   'pointer-events:none;font-size:.82em;line-height:1.4;}'
-                    . 'html.rescue-pie-tooltip--enhanced .pie-tooltip{position:fixed;left:0;top:0;transform:none;}'
-                    . '.pie-tooltip strong{display:block;margin-bottom:3px;}'
-                    . '.pie-tooltip__types{margin:2px 0 4px;padding-left:14px;}'
-                    . '.pie-tooltip__meta{color:#666;font-size:.9em;}'
-                );
-                $seenTooltipUids = [];
-                foreach ($statistics as $yearData) {
-                    foreach ($yearData['categories'] as $cat) {
-                        $uid = (int)$cat['uid'];
-                        if ($uid > 0 && !in_array($uid, $seenTooltipUids, true)) {
-                            $seenTooltipUids[] = $uid;
-                            $pageRenderer->addCssInlineBlock(
-                                'rescueStatisticsPieTooltipFallback' . $uid,
-                                "html:not(.rescue-pie-tooltip--enhanced) .pie-wrap:has(.pie-slice--{$uid}:hover) .pie-tooltip--{$uid}{display:block;}"
-                            );
-                        }
-                    }
-                }
-                $pageRenderer->addJsInlineCode(
-                    'rescueStatisticsPieTooltip',
-                    '(function(){'
-                    . 'if(window.__rescuePieTooltipInit){return;}window.__rescuePieTooltipInit=true;'
-                    . 'document.documentElement.classList.add("rescue-pie-tooltip--enhanced");'
-                    . 'var clamp=function(v,min,max){return Math.max(min,Math.min(max,v));};'
-                    . 'var position=function(t,e){'
-                    . 'var gap=14;var rect=t.getBoundingClientRect();'
-                    . 'var x=e.clientX+gap;var y=e.clientY+gap;'
-                    . 'if(x+rect.width>window.innerWidth-8){x=e.clientX-rect.width-gap;}'
-                    . 'if(y+rect.height>window.innerHeight-8){y=e.clientY-rect.height-gap;}'
-                    . 't.style.left=clamp(x,8,Math.max(8,window.innerWidth-rect.width-8))+"px";'
-                    . 't.style.top=clamp(y,8,Math.max(8,window.innerHeight-rect.height-8))+"px";'
-                    . '};'
-                    . 'document.addEventListener("mouseover",function(e){'
-                    . 'var slice=e.target.closest(".pie-slice[data-category-uid]");if(!slice){return;}'
-                    . 'var wrap=slice.closest(".pie-wrap");if(!wrap){return;}'
-                    . 'var uid=slice.getAttribute("data-category-uid");'
-                    . 'var tooltip=wrap.querySelector(".pie-tooltip[data-category-uid=\'"+uid+"\']");'
-                    . 'if(!tooltip){return;}tooltip.style.display="block";position(tooltip,e);'
-                    . '});'
-                    . 'document.addEventListener("mousemove",function(e){'
-                    . 'var slice=e.target.closest(".pie-slice[data-category-uid]");if(!slice){return;}'
-                    . 'var wrap=slice.closest(".pie-wrap");if(!wrap){return;}'
-                    . 'var uid=slice.getAttribute("data-category-uid");'
-                    . 'var tooltip=wrap.querySelector(".pie-tooltip[data-category-uid=\'"+uid+"\']");'
-                    . 'if(!tooltip||tooltip.style.display!=="block"){return;}position(tooltip,e);'
-                    . '});'
-                    . 'document.addEventListener("mouseout",function(e){'
-                    . 'var slice=e.target.closest(".pie-slice[data-category-uid]");if(!slice){return;}'
-                    . 'var wrap=slice.closest(".pie-wrap");if(!wrap){return;}'
-                    . 'var uid=slice.getAttribute("data-category-uid");'
-                    . 'var tooltip=wrap.querySelector(".pie-tooltip[data-category-uid=\'"+uid+"\']");'
-                    . 'if(tooltip){tooltip.style.display="none";}'
-                    . '});'
-                    . '})();'
-                );
+                $this->registerStatisticsAssets($statistics);
             }
         }
 
@@ -278,24 +220,23 @@ class EventController extends ActionController
                 'statistics' => isset($statistics[$year]) ? [(int)$year => $statistics[$year]] : [],
             ];
         }
-        // Listen-Layout: "compact" (Monatsgruppen, Kategorie-Filter) oder "classic" (bisherige Zeilen).
-        // Standard "compact", auch für bestehende Plugins ohne gespeicherten FlexForm-Wert.
-        $listLayout = (string)($this->settings['listLayout'] ?? '') === 'classic' ? 'classic' : 'compact';
-        $compactList = [];
-        if ($listLayout === 'compact' && !$this->excludeDisabledDetail && in_array($templateVariant, ['bootstrap', 'foundation'], true)) {
-            $compactList = GeneralUtility::makeInstance(CompactListBuilder::class)
-                ->build($eventItems, $statistics, $eventItemsByYear !== []);
-        }
-
         // Block-Statistik nur anzeigen wenn keine Jahresgruppen aktiv (dann erfolgt Inline-Rendering)
         $showBlockStatistics = $showStatistics && empty($eventItemsByYear);
+        $statisticsTitle = 'Einsatzstatistik';
+        if ($selectedYear > 0) {
+            $statisticsTitle .= ' ' . $selectedYear;
+        }
 
         $this->view->assignMultiple([
             'events' => $events,
             'eventItems' => $eventItems,
             'eventItemsByYear' => $eventItemsByYear,
             'stations' => $stations,
-            'searchWord' => $searchWord,
+            'searchWord' => $submittedSearchWord,
+            'searchDateRange' => $searchDateRange,
+            'hasSearchQuery' => $hasSearchQuery,
+            'searchResultCount' => count($eventItems),
+            'searchResultContext' => $searchResultContext,
             'enableSearch' => $enableSearch,
             'maxCount' => $maxCount,
             'dateFrom' => $dateFromDt,
@@ -307,8 +248,9 @@ class EventController extends ActionController
             'detailPageUid' => $detailPageUid,
             'defaultStationUid'   => $defaultStationUid,
             'activeStationUid'    => $activeStationUid,
-            'settings'            => $this->settings,
+            'settings'            => $viewSettings,
             'statistics'          => $statistics,
+            'statisticsTitle'     => $statisticsTitle,
             'yearGroupsWithStats' => $yearGroupsWithStats,
             'showStatistics'      => $showStatistics,
             'showBlockStatistics' => $showBlockStatistics,
@@ -322,16 +264,13 @@ class EventController extends ActionController
             'activeStationName'   => $activeStationName,
             'showMapView'         => $showMapView,
             'mapPosition'         => $mapPosition,
-            'listLayout'          => $listLayout,
-            'compactList'         => $compactList,
         ]);
 
         return $this->htmlResponse();
     }
 
     /**
-     * Cards-Widget (z. B. Startseite): neueste Einsätze als Karten.
-     * Nutzt die Listenlogik, blendet aber Einsätze ohne Detailansicht aus.
+     * Cards-Ansicht (wie list, aber mit Card-Grid Layout)
      */
     public function cardsAction(
         ?string $searchWord = null,
@@ -404,7 +343,19 @@ class EventController extends ActionController
         $statisticsYears  = (int)($this->settings['statisticsYears'] ?? 0);
         $showMonthlyChart = (bool)($this->settings['showMonthlyChart'] ?? true);
         $showStationFilter = (bool)($this->settings['showStationFilter'] ?? true);
-        $statistics       = $this->eventRepository->getYearlyStatistics($stationUid, $statisticsYears);
+        $showCategoryStatistics = (bool)($this->settings['showCategoryStatistics'] ?? true);
+        $showLongestOperation = (bool)($this->settings['showLongestOperation'] ?? false);
+        $showShortestOperation = (bool)($this->settings['showShortestOperation'] ?? false);
+        $showStationYearOverview = (bool)($this->settings['showStationYearOverview'] ?? false);
+        $needsYearlyStatistics = $showCategoryStatistics || $showLongestOperation || $showShortestOperation;
+        $statistics = $needsYearlyStatistics
+            ? $this->eventRepository->getYearlyStatistics(
+                $stationUid,
+                $statisticsYears,
+                $showLongestOperation,
+                $showShortestOperation
+            )
+            : [];
         $monthlyStatistics = $showMonthlyChart
             ? $this->eventRepository->getMonthlyStatistics($stationUid, $statisticsYears)
             : [];
@@ -416,120 +367,42 @@ class EventController extends ActionController
                 $stationName = $station->getName();
             }
         }
+        $statisticsTitleYear = count($statistics) === 1 ? (string)array_key_first($statistics) : '';
 
-        if (!empty($statistics)) {
-            $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
-            $pageRenderer->addCssInlineBlock(
-                'rescueStatisticsLayout',
-                '.rescue-statistics__station-filter{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:.25rem 0 1rem;}'
-                . '.rescue-statistics__station-filter .form-select{min-width:220px;}'
-                . '.rescue-statistics__layout{display:flex;gap:2rem;align-items:flex-start;flex-wrap:wrap;margin:1rem 0 2rem;}'
-                . '.rescue-statistics__chart-wrap{flex:0 0 220px;}'
-                . '.rescue-statistics__table-wrap{flex:1 1 300px;}'
-                . '.rescue-statistics__table{width:100%;border-collapse:collapse;}'
-                . '.rescue-statistics__table th,.rescue-statistics__table td{padding:.35rem .6rem;border-bottom:1px solid #ddd;vertical-align:middle;}'
-                . '.rescue-statistics__num{text-align:right;white-space:nowrap;}'
-                . '.rescue-statistics__dot{display:inline-block;width:14px;height:14px;border-radius:50%;}'
-                . '.rescue-statistics__total{font-size:.85em;font-weight:normal;color:#666;margin-left:.5rem;}'
-                . '.rescue-statistics__year-title{margin-bottom:.25rem;}'
-                . '.rescue-statistics__compare{font-size:.85em;color:#666;margin-top:.5rem;}'
+        if (!empty($statistics) || $showStationYearOverview || $showMonthlyChart) {
+            $this->registerStatisticsAssets($statistics);
+        }
+
+        $stationYearOverview = [];
+        if ($showStationYearOverview) {
+            $stationYearOverview = $this->eventRepository->getStationYearOverview(
+                $allowedStationUids,
+                (int)date('Y')
             );
-            $pageRenderer->addCssInlineBlock(
-                'rescueStatisticsPie',
-                '.rescue-statistics svg path,.rescue-statistics svg circle{'
-                . 'transition:transform .15s ease-out;cursor:pointer;transform-origin:110px 110px;}'
-                . '.rescue-statistics svg path:hover,.rescue-statistics svg circle:hover{'
-                . 'transform:scale(1.08);}'
-            );
-            $pageRenderer->addCssInlineBlock(
-                'rescueStatisticsPieTooltip',
-                '.pie-wrap{position:relative;display:inline-block;}'
-                . '.pie-tooltip{display:none;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);'
-                .   'min-width:0;width:max-content;max-width:min(360px,calc(100vw - 20px));'
-                .   'background:rgba(255,255,255,.97);border:1px solid #ddd;border-radius:4px;'
-                .   'padding:6px 10px;z-index:20;box-shadow:0 2px 6px rgba(0,0,0,.15);'
-                .   'pointer-events:none;font-size:.82em;line-height:1.4;}'
-                . 'html.rescue-pie-tooltip--enhanced .pie-tooltip{position:fixed;left:0;top:0;transform:none;}'
-                . '.pie-tooltip strong{display:block;margin-bottom:3px;}'
-                . '.pie-tooltip__types{margin:2px 0 4px;padding-left:14px;}'
-                . '.pie-tooltip__meta{color:#666;font-size:.9em;}'
-            );
-            $seenTooltipUids = [];
-            foreach ($statistics as $yearData) {
-                foreach ($yearData['categories'] as $cat) {
-                    $uid = (int)$cat['uid'];
-                    if ($uid > 0 && !in_array($uid, $seenTooltipUids, true)) {
-                        $seenTooltipUids[] = $uid;
-                        $pageRenderer->addCssInlineBlock(
-                            'rescueStatisticsPieTooltipFallback' . $uid,
-                            "html:not(.rescue-pie-tooltip--enhanced) .pie-wrap:has(.pie-slice--{$uid}:hover) .pie-tooltip--{$uid}{display:block;}"
-                        );
-                    }
-                }
+            $stationYearOverview['rows'] = [];
+            foreach ($stations as $stationRecord) {
+                $stationRecordUid = (int)$stationRecord->getUid();
+                $stationData = $stationYearOverview['stations'][$stationRecordUid] ?? [
+                    'count' => 0,
+                    'duration' => '—',
+                ];
+                $stationYearOverview['rows'][] = [
+                    'name' => $stationRecord->getName(),
+                    'count' => $stationData['count'],
+                    'duration' => $stationData['duration'],
+                ];
             }
-            $pageRenderer->addJsInlineCode(
-                'rescueStatisticsPieTooltip',
-                '(function(){'
-                . 'if(window.__rescuePieTooltipInit){return;}window.__rescuePieTooltipInit=true;'
-                . 'document.documentElement.classList.add("rescue-pie-tooltip--enhanced");'
-                . 'var clamp=function(v,min,max){return Math.max(min,Math.min(max,v));};'
-                . 'var position=function(t,e){'
-                . 'var gap=14;var rect=t.getBoundingClientRect();'
-                . 'var x=e.clientX+gap;var y=e.clientY+gap;'
-                . 'if(x+rect.width>window.innerWidth-8){x=e.clientX-rect.width-gap;}'
-                . 'if(y+rect.height>window.innerHeight-8){y=e.clientY-rect.height-gap;}'
-                . 't.style.left=clamp(x,8,Math.max(8,window.innerWidth-rect.width-8))+"px";'
-                . 't.style.top=clamp(y,8,Math.max(8,window.innerHeight-rect.height-8))+"px";'
-                . '};'
-                . 'document.addEventListener("mouseover",function(e){'
-                . 'var slice=e.target.closest(".pie-slice[data-category-uid]");if(!slice){return;}'
-                . 'var wrap=slice.closest(".pie-wrap");if(!wrap){return;}'
-                . 'var uid=slice.getAttribute("data-category-uid");'
-                . 'var tooltip=wrap.querySelector(".pie-tooltip[data-category-uid=\'"+uid+"\']");'
-                . 'if(!tooltip){return;}tooltip.style.display="block";position(tooltip,e);'
-                . '});'
-                . 'document.addEventListener("mousemove",function(e){'
-                . 'var slice=e.target.closest(".pie-slice[data-category-uid]");if(!slice){return;}'
-                . 'var wrap=slice.closest(".pie-wrap");if(!wrap){return;}'
-                . 'var uid=slice.getAttribute("data-category-uid");'
-                . 'var tooltip=wrap.querySelector(".pie-tooltip[data-category-uid=\'"+uid+"\']");'
-                . 'if(!tooltip||tooltip.style.display!=="block"){return;}position(tooltip,e);'
-                . '});'
-                . 'document.addEventListener("mouseout",function(e){'
-                . 'var slice=e.target.closest(".pie-slice[data-category-uid]");if(!slice){return;}'
-                . 'var wrap=slice.closest(".pie-wrap");if(!wrap){return;}'
-                . 'var uid=slice.getAttribute("data-category-uid");'
-                . 'var tooltip=wrap.querySelector(".pie-tooltip[data-category-uid=\'"+uid+"\']");'
-                . 'if(tooltip){tooltip.style.display="none";}'
-                . '});'
-                . '})();'
-            );
-            $pageRenderer->addCssInlineBlock(
-                'rescueStatisticsBar',
-                '.rescue-statistics__bar-chart{margin:2rem 0 1rem;}'
-                . '.rescue-statistics__bar-chart-desktop{display:block;}'
-                . '.rescue-statistics__bar-chart-mobile{display:none;}'
-                . '.rescue-statistics__bar-chart svg rect.bar{transition:opacity .15s;cursor:default;}'
-                . '.rescue-statistics__bar-chart svg rect.bar:hover{opacity:.8;}'
-                . '.rescue-statistics__mobile-row{margin:0 0 .75rem;padding:.5rem .6rem;border:1px solid #e5e5e5;border-radius:6px;}'
-                . '.rescue-statistics__mobile-month{font-weight:600;margin-bottom:.35rem;}'
-                . '.rescue-statistics__mobile-line{display:flex;align-items:center;gap:.45rem;margin:.2rem 0;}'
-                . '.rescue-statistics__mobile-year{flex:0 0 2.8rem;font-size:.9em;color:#555;}'
-                . '.rescue-statistics__mobile-track{flex:1;height:10px;background:#f1f1f1;border-radius:999px;overflow:hidden;}'
-                . '.rescue-statistics__mobile-fill{display:block;height:100%;min-width:2px;border-radius:999px;}'
-                . '.rescue-statistics__mobile-count{flex:0 0 1.8rem;text-align:right;font-variant-numeric:tabular-nums;}'
-                . '@media (max-width:720px){'
-                . '.rescue-statistics__bar-chart-desktop{display:none;}'
-                . '.rescue-statistics__bar-chart-mobile{display:block;}'
-                . '}'
-            );
         }
 
         $this->view->assignMultiple([
             'statistics'        => $statistics,
             'monthlyStatistics' => $monthlyStatistics,
             'showMonthlyChart'  => $showMonthlyChart,
+            'showCategoryStatistics' => $showCategoryStatistics,
+            'showStationYearOverview' => $showStationYearOverview,
+            'stationYearOverview' => $stationYearOverview,
             'stationName'       => $stationName,
+            'statisticsTitleYear' => $statisticsTitleYear,
             'stationUid'        => $stationUid,
             'activeStationUid'  => $stationUid,
             'stations'          => $stations,
@@ -545,24 +418,17 @@ class EventController extends ActionController
     public function showAction(Event $event, ?string $station = null): ResponseInterface
     {
         $event = $this->eventRepository->findByUid($event->getUid());
+        $pageTitle = trim((string)$event->getTitle());
+        if ($event->getStart() instanceof \DateTimeInterface) {
+            $pageTitle .= ' – ' . $event->getStart()->format('d.m.Y');
+        }
+        GeneralUtility::makeInstance(EventPageTitleProvider::class)
+            ->setTitle($pageTitle);
         $groupedVehicleData = $this->groupVehiclesByBrigadeAndStation($event);
-        $templateVariant = (string)($this->settings['templateVariant'] ?? 'bootstrap');
-        $templateVariantCompat = [
-            'newdesign'        => 'bootstrap',
-            'standard'         => 'bootstrap',
-            'sidebar'          => 'sidebar-foundation',
-            'newdesignsidebar' => 'sidebar-bootstrap',
-        ];
-        if (isset($templateVariantCompat[$templateVariant])) {
-            $templateVariant = $templateVariantCompat[$templateVariant];
-        }
-        // Sidebar-Varianten haben keine eigene Detailansicht → auf Bootstrap zurückfallen
-        if (in_array($templateVariant, ['sidebar-bootstrap', 'sidebar-foundation'], true)) {
-            $templateVariant = 'bootstrap';
-        }
-        if (!in_array($templateVariant, ['bootstrap', 'foundation'], true)) {
-            $templateVariant = 'bootstrap';
-        }
+        $templateVariant = $this->normalizeTemplateVariant(
+            (string)($this->settings['templateVariant'] ?? 'bootstrap'),
+            true
+        );
 
         $defaultStationUid = (int)($this->settings['defaultStation'] ?? 0);
         $selectedStationUid = $this->normalizeRecordUid($station);
@@ -620,16 +486,18 @@ class EventController extends ActionController
         }
 
         $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
-        $pageRenderer->addHeaderData('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox@3/dist/css/glightbox.min.css">');
+        $pageRenderer->addCssFile('EXT:rescue_reports/Resources/Public/Vendor/glightbox/glightbox.min.css');
         $pageRenderer->addJsFooterLibrary(
             'glightbox',
-            'https://cdn.jsdelivr.net/npm/glightbox@3/dist/js/glightbox.min.js',
+            'EXT:rescue_reports/Resources/Public/Vendor/glightbox/glightbox.min.js',
             'text/javascript',
             false,
             false,
             '',
             true
         );
+        $this->registerOpenGraphMetaTags($event);
+        $this->registerSearchEngineMetaTags($event);
 
         $this->view->assignMultiple([
             'event' => $event,
@@ -895,9 +763,196 @@ class EventController extends ActionController
         return $sortedVehicles;
     }
 
+    protected function normalizeTemplateVariant(string $variant, bool $detailView = false): string
+    {
+        $legacyVariants = [
+            'newdesign' => 'bootstrap',
+            'standard' => 'bootstrap',
+            'sidebar' => 'sidebar-foundation',
+            'newdesignsidebar' => 'sidebar-bootstrap',
+        ];
+        $variant = $legacyVariants[$variant] ?? $variant;
+
+        if (!in_array($variant, ['bootstrap', 'foundation', 'sidebar-bootstrap', 'sidebar-foundation'], true)) {
+            return 'bootstrap';
+        }
+
+        if ($detailView && in_array($variant, ['sidebar-bootstrap', 'sidebar-foundation'], true)) {
+            return 'bootstrap';
+        }
+
+        return $variant;
+    }
+
+    /**
+     * Adds cacheable statistics assets and category-specific CSS fallbacks.
+     *
+     * @param array<int, array<string, mixed>> $statistics
+     */
+    protected function registerStatisticsAssets(array $statistics): void
+    {
+        $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
+        $pageRenderer->addCssFile('EXT:rescue_reports/Resources/Public/Css/statistics.css');
+        $pageRenderer->addJsFooterFile('EXT:rescue_reports/Resources/Public/Js/statistics-pie-tooltip.js');
+
+        $seenTooltipUids = [];
+        foreach ($statistics as $yearData) {
+            foreach ($yearData['categories'] as $category) {
+                $uid = (int)$category['uid'];
+                if ($uid <= 0 || in_array($uid, $seenTooltipUids, true)) {
+                    continue;
+                }
+                $seenTooltipUids[] = $uid;
+                $pageRenderer->addCssInlineBlock(
+                    'rescueStatisticsPieTooltipFallback' . $uid,
+                    "html:not(.rescue-pie-tooltip--enhanced) .pie-wrap:has(.pie-slice--{$uid}:hover) .pie-tooltip--{$uid}{display:block;}"
+                );
+            }
+        }
+    }
+
+    /**
+     * Registers social-media preview data for an incident detail page.
+     */
+    protected function registerOpenGraphMetaTags(Event $event): void
+    {
+        $title = trim((string)$event->getTitle());
+        $description = trim(preg_replace('/\s+/', ' ', strip_tags((string)$event->getDescription())) ?? '');
+        $metaTagManager = GeneralUtility::makeInstance(MetaTagManagerRegistry::class);
+
+        $metaTagManager->getManagerForProperty('og:title')->addProperty('og:title', $title);
+        $metaTagManager->getManagerForProperty('og:type')->addProperty('og:type', 'article');
+        $metaTagManager->getManagerForProperty('twitter:card')->addProperty('twitter:card', 'summary_large_image');
+        $metaTagManager->getManagerForProperty('twitter:title')->addProperty('twitter:title', $title);
+
+        if ($description !== '') {
+            $metaTagManager->getManagerForProperty('og:description')->addProperty('og:description', $description);
+            $metaTagManager->getManagerForProperty('twitter:description')->addProperty('twitter:description', $description);
+        }
+
+        $imageUri = $this->getFirstEventImageUri($event);
+        if ($imageUri !== '') {
+            $metaTagManager->getManagerForProperty('og:image')->addProperty('og:image', $imageUri);
+            $metaTagManager->getManagerForProperty('twitter:image')->addProperty('twitter:image', $imageUri);
+        }
+    }
+
+    /**
+     * Adds a canonical URL and Schema.org data for an incident detail page.
+     */
+    protected function registerSearchEngineMetaTags(Event $event): void
+    {
+        $canonicalUrl = $this->uriBuilder
+            ->reset()
+            ->setCreateAbsoluteUri(true)
+            ->uriFor('show', ['event' => $event], 'Event');
+
+        $title = trim((string)$event->getTitle());
+        $description = trim(preg_replace('/\s+/', ' ', strip_tags((string)$event->getDescription())) ?? '');
+        $schema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'NewsArticle',
+            'headline' => $title,
+            'mainEntityOfPage' => [
+                '@type' => 'WebPage',
+                '@id' => $canonicalUrl,
+            ],
+        ];
+
+        if ($description !== '') {
+            $schema['description'] = $description;
+        }
+        if ($event->getStart() instanceof \DateTimeInterface) {
+            $schema['datePublished'] = $event->getStart()->format(DATE_ATOM);
+        }
+
+        $imageUri = $this->getFirstEventImageUri($event);
+        if ($imageUri !== '') {
+            $schema['image'] = $imageUri;
+        }
+
+        $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
+        $pageRenderer->addHeaderData(
+            '<link rel="canonical" href="' . htmlspecialchars($canonicalUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '">'
+        );
+        $pageRenderer->addHeaderData(
+            '<script type="application/ld+json">' . json_encode($schema, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES) . '</script>'
+        );
+    }
+
+    protected function getFirstEventImageUri(Event $event): string
+    {
+        foreach ($event->getImages() as $image) {
+            try {
+                $imageUri = GeneralUtility::makeInstance(ImageService::class)->getImageUri($image, true);
+            } catch (\Throwable $exception) {
+                continue;
+            }
+
+            if ($imageUri !== '') {
+                return $imageUri;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @param array<string, mixed> $settings
+     * @return array<string, mixed>
+     */
+    protected function normalizeCardImageSettings(array $settings): array
+    {
+        $mode = (string)($settings['cardImageMode'] ?? 'format');
+        $settings['cardImageMode'] = in_array($mode, ['format', 'servercrop'], true)
+            ? $mode
+            : 'format';
+
+        $ratio = (string)($settings['cardImageRatio'] ?? '16 / 9');
+        $settings['cardImageRatio'] = in_array($ratio, ['16 / 9', '4 / 3', '1 / 1'], true)
+            ? $ratio
+            : '16 / 9';
+
+        $settings['cardImageWidth'] = max(1, min(4000, (int)($settings['cardImageWidth'] ?? 800)));
+        $settings['cardImageHeight'] = max(1, min(4000, (int)($settings['cardImageHeight'] ?? 500)));
+
+        return $settings;
+    }
+
     /**
      * Wandelt FlexForm-Datumswerte zuverlässig in DateTime um
      */
+    /**
+     * Recognizes a date entered as the complete search term.
+     *
+     * @return array{from: string, to: string}|null
+     */
+    protected function extractDateRangeFromSearchTerm(string $searchTerm): ?array
+    {
+        $searchTerm = trim($searchTerm);
+        $date = null;
+
+        if (preg_match('/^\d{4}$/', $searchTerm)) {
+            return ['from' => $searchTerm . '-01-01', 'to' => $searchTerm . '-12-31'];
+        }
+
+        foreach (['!Y-m-d', '!d.m.Y', '!d/m/Y'] as $format) {
+            $candidate = \DateTime::createFromFormat($format, $searchTerm);
+            $errors = \DateTime::getLastErrors();
+            if ($candidate instanceof \DateTime && ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0))) {
+                $date = $candidate;
+                break;
+            }
+        }
+
+        if (!$date instanceof \DateTime) {
+            return null;
+        }
+
+        $formattedDate = $date->format('Y-m-d');
+        return ['from' => $formattedDate, 'to' => $formattedDate];
+    }
+
     protected function createDateTimeFromFlexFormValue($value): ?\DateTime
     {
         if ($value instanceof \DateTime) {

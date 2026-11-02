@@ -9,8 +9,4 @@ return [
         'provider' => \TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider::class,
         'source' => 'EXT:rescue_reports/Resources/Public/Icons/sidebar.svg',
     ],
-    'rescue_reports_cards' => [
-        'provider' => \TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider::class,
-        'source' => 'EXT:rescue_reports/Resources/Public/Icons/content.svg',
-    ],
 ];

@@ -44,7 +44,7 @@ use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
         ]
     );
 
-    // Cards-Plugin (z. B. Startseite)
+    // Cards-Plugin
     ExtensionUtility::configurePlugin(
         'RescueReports',
         'Cards',
@@ -88,3 +88,11 @@ $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['proc
 
 $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['ext/install']['update']['rescueReportsInitialData'] =
     \Nkfire\RescueReports\Updates\InitialDataWizard::class;
+
+// TextSnippets Modal CSS laden
+$GLOBALS['TYPO3_CONF_VARS']['BE']['stylesheets']['rescue_reports_textsnippets'] =
+    'EXT:rescue_reports/Resources/Public/Css/textsnippets-modal-1.0.1.css';
+
+// TextSnippets AJAX Route registrieren
+$GLOBALS['TYPO3_CONF_VARS']['BE']['AJAX']['rescue_reports_snippets'] =
+    \Nkfire\RescueReports\Controller\Backend\SnippetAjaxController::class . '::listAction';

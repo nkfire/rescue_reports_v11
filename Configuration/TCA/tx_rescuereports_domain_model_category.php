@@ -14,7 +14,7 @@ return [
         'sortby'                   => 'sorting',
     ],
     'types' => [
-        '1' => ['showitem' => 'title, color, --div--;Access, hidden'],
+        '1' => ['showitem' => 'title, color, --div--;Bild, image, --div--;Access, hidden'],
     ],
     'columns' => [
         'hidden' => [
@@ -33,6 +33,19 @@ return [
                 'default'    => '#3498db',
                 'size'       => 10,
             ],
+        ],
+        'image' => [
+            'label' => 'Bild',
+            'config' => \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::getFileFieldTCAConfig(
+                'image',
+                [
+                    'maxitems' => 1,
+                    'appearance' => [
+                        'createNewRelationLinkTitle' => 'LLL:EXT:core/Resources/Private/Language/locallang_core.xlf:label.addFileReference',
+                    ],
+                ],
+                $GLOBALS['TYPO3_CONF_VARS']['GFX']['imagefile_ext']
+            ),
         ],
     ],
 ];

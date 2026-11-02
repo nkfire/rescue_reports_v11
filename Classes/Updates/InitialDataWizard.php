@@ -86,7 +86,7 @@ final class InitialDataWizard implements UpgradeWizardInterface
                 ->getConnectionForTable($tableName);
 
             return $connection->createSchemaManager()->tablesExist([$tableName]);
-        } catch (\Throwable) {
+        } catch (\Throwable $exception) {
             return false;
         }
     }

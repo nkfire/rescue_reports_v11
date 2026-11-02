@@ -21,12 +21,53 @@
         </f:form>
     </f:if>
 
-    <f:if condition="{stationName}">
-        <f:then><h1 class="rescue-statistics__station">Einsatzstatistik: {stationName}</h1></f:then>
-        <f:else><h1 class="rescue-statistics__station">Einsatzstatistik</h1></f:else>
+    <h1 class="rescue-statistics__station">
+        Einsatzstatistik
+        <f:if condition="{statisticsTitleYear}"> {statisticsTitleYear}</f:if>
+        <f:if condition="{stationName}"> der {stationName}</f:if>
+    </h1>
+
+    <f:if condition="{showCategoryStatistics}">
+        <f:then>
+            <f:render partial="Statistics/PieChart" arguments="{statistics: statistics, hideYearInSummary: statisticsTitleYear}" />
+        </f:then>
+        <f:else>
+            <f:render partial="Statistics/DurationExtremes" arguments="{statistics: statistics}" />
+        </f:else>
     </f:if>
 
-    <f:render partial="Statistics/PieChart" arguments="{statistics: statistics}" />
+    <f:if condition="{showStationYearOverview} && {stationYearOverview.rows}">
+        <section class="rescue-statistics__station-overview">
+            <h2>Ortsfeuerwehren im Jahr {stationYearOverview.year}</h2>
+            <div class="rescue-statistics__table-wrap">
+                <table class="rescue-statistics__table">
+                    <thead>
+                        <tr>
+                            <th>Ortsfeuerwehr</th>
+                            <th class="rescue-statistics__num">Einsätze</th>
+                            <th class="rescue-statistics__num">Gesamteinsatzzeit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <f:for each="{stationYearOverview.rows}" as="stationRow">
+                            <tr>
+                                <td>{stationRow.name}</td>
+                                <td class="rescue-statistics__num">{stationRow.count}</td>
+                                <td class="rescue-statistics__num">{stationRow.duration}</td>
+                            </tr>
+                        </f:for>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2"><strong>Gesamteinsatzzeit</strong></td>
+                            <td class="rescue-statistics__num"><strong>{stationYearOverview.totalDuration}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <p class="rescue-statistics__hint">Die Gesamteinsatzzeit ist die Summe der für die Ortsfeuerwehren aufgeführten Einsatzzeiten.</p>
+        </section>
+    </f:if>
 
     <f:if condition="{showMonthlyChart} && {monthlyStatistics.svgBarChart}">
         <div class="rescue-statistics__bar-chart">

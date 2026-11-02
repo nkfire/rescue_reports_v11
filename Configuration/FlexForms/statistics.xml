@@ -73,6 +73,70 @@
                         </TCEforms>
                     </settings.showMonthlyChart>
 
+                    <settings.showCategoryStatistics>
+                        <TCEforms>
+                            <label>Kategorie-Statistik anzeigen</label>
+                            <config>
+                                <type>check</type>
+                                <default>1</default>
+                                <items>
+                                    <numIndex index="0">
+                                        <numIndex index="0">Ja</numIndex>
+                                        <numIndex index="1">1</numIndex>
+                                    </numIndex>
+                                </items>
+                            </config>
+                        </TCEforms>
+                    </settings.showCategoryStatistics>
+
+                    <settings.showLongestOperation>
+                        <TCEforms>
+                            <label>Längsten Einsatz anzeigen</label>
+                            <config>
+                                <type>check</type>
+                                <default>0</default>
+                                <items>
+                                    <numIndex index="0">
+                                        <numIndex index="0">Ja</numIndex>
+                                        <numIndex index="1">1</numIndex>
+                                    </numIndex>
+                                </items>
+                            </config>
+                        </TCEforms>
+                    </settings.showLongestOperation>
+
+                    <settings.showShortestOperation>
+                        <TCEforms>
+                            <label>Kürzesten Einsatz anzeigen</label>
+                            <config>
+                                <type>check</type>
+                                <default>0</default>
+                                <items>
+                                    <numIndex index="0">
+                                        <numIndex index="0">Ja</numIndex>
+                                        <numIndex index="1">1</numIndex>
+                                    </numIndex>
+                                </items>
+                            </config>
+                        </TCEforms>
+                    </settings.showShortestOperation>
+
+                    <settings.showStationYearOverview>
+                        <TCEforms>
+                            <label>Jahresübersicht aller Ortsfeuerwehren anzeigen</label>
+                            <config>
+                                <type>check</type>
+                                <default>0</default>
+                                <items>
+                                    <numIndex index="0">
+                                        <numIndex index="0">Ja</numIndex>
+                                        <numIndex index="1">1</numIndex>
+                                    </numIndex>
+                                </items>
+                            </config>
+                        </TCEforms>
+                    </settings.showStationYearOverview>
+
                 </el>
             </ROOT>
         </general>

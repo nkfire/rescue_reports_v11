@@ -1,0 +1,83 @@
+/* TextSnippets Modal Styles */
+
+#textSnippetsModal .snippet-item {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border: 1px solid #ddd;
+}
+
+#textSnippetsModal .snippet-item:hover {
+    background-color: #f0f0f0;
+}
+
+#textSnippetsModal .snippet-item.selected {
+    background-color: #e7f3ff;
+    border-color: #0066cc;
+}
+
+#textSnippetsModal #snippetsList {
+    border-right: 1px solid #ddd;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+#textSnippetsModal #snippetsPreview {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    min-height: 100px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+#textSnippetsModal .modal-body {
+    padding: 0;
+}
+
+#textSnippetsModal .row {
+    margin: 0;
+}
+
+#textSnippetsModal .col-md-6 {
+    padding: 15px;
+}
+
+/* Scrollbar styling */
+#textSnippetsModal #snippetsList::-webkit-scrollbar,
+#textSnippetsModal #snippetsPreview::-webkit-scrollbar {
+    width: 6px;
+}
+
+#textSnippetsModal #snippetsList::-webkit-scrollbar-track,
+#textSnippetsModal #snippetsPreview::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#textSnippetsModal #snippetsList::-webkit-scrollbar-thumb,
+#textSnippetsModal #snippetsPreview::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+#textSnippetsModal #snippetsList::-webkit-scrollbar-thumb:hover,
+#textSnippetsModal #snippetsPreview::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* TextSnippets Button - Show text label */
+a.cke_button__textsnippets {
+    min-width: 120px !important;
+    width: auto !important;
+}
+
+a.cke_button__textsnippets .cke_button_icon {
+    display: none !important;
+    width: 0 !important;
+    visibility: hidden !important;
+}
+
+a.cke_button__textsnippets .cke_button_label {
+    display: inline-block !important;
+    visibility: visible !important;
+    width: auto !important;
+}

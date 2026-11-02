@@ -23,7 +23,7 @@ return [
     ],
     'types' => [
         '1' => [
-            'showitem' => 'hidden, title, --palette--;;times, number, types, location, --palette--;;coordinates, disable_detail, description, slug, --div--;Eingesetzte Einheiten, stations, --div--;Fahrzeuge, vehicles, --div--;Bilder, images, --div--;Intern, internal_notes'
+            'showitem' => 'hidden, title, --palette--;;times, number, types, --palette--;;keywordEscalation, location, --palette--;;coordinates, disable_detail, description, slug, --div--;Eingesetzte Einheiten, stations, --div--;Fahrzeuge, vehicles, --div--;Bilder, images, --div--;Intern, internal_notes'
         ],
     ],
 
@@ -35,6 +35,11 @@ return [
         'coordinates' => [
             'showitem' => 'latitude, longitude',
             'label' => 'GPS-Koordinaten (optional)',
+        ],
+        'keywordEscalation' => [
+            'showitem' => 'enable_keyword_escalation, keyword_escalation',
+            'label' => 'Stichworterhöhung (optional)',
+            'displayCond' => 'FIELD:enable_keyword_escalation:>:0',
         ],
     ],
 
@@ -105,7 +110,7 @@ return [
         ],
         'number' => [
             'label' => 'Einsatznummer',
-            'config' => ['type' => 'input', 'eval' => 'trim', 'placeholder' => 'ZÖ/123', 'max' => 6, 'default' => 'ZÖ/'],
+            'config' => ['type' => 'input', 'eval' => 'trim', 'placeholder' => '26/123', 'max' => 6, 'default' => '26/'],
         ],
         'description' => [
             'label' => 'Einsatzbericht',
@@ -134,6 +139,37 @@ return [
                 ',
                 'itemsProcFunc' => \Nkfire\RescueReports\UserFunctions\TypeItemsProcFunc::class . '->filterDeprecatedTypes',
                 'MM' => 'tx_rescuereports_event_type_mm',
+                'minitems' => 0,
+                'maxitems' => 1,
+            ],
+        ],
+
+        // Stichworterhöhung aktivieren
+        'enable_keyword_escalation' => [
+            'label' => 'Stichworterhöhung verwenden',
+            'onChange' => 'reload',
+            'config' => [
+                'type' => 'check',
+                'items' => [
+                    ['Stichworterhöhung als Einsatzart in Statistiken verwenden', 1],
+                ],
+                'default' => 0,
+            ],
+        ],
+
+        // Stichworterhöhung
+        'keyword_escalation' => [
+            'label' => 'Stichworterhöhung auf',
+            'displayCond' => 'FIELD:enable_keyword_escalation:>:0',
+            'config' => [
+                'type' => 'select',
+                'renderType' => 'selectSingle',
+                'foreign_table' => 'tx_rescuereports_domain_model_type',
+                'foreign_table_where' => '
+                    ORDER BY tx_rescuereports_domain_model_type.title
+                ',
+                'itemsProcFunc' => \Nkfire\RescueReports\UserFunctions\TypeItemsProcFunc::class . '->filterDeprecatedTypes',
+                'MM' => 'tx_rescuereports_event_keyword_escalation_mm',
                 'minitems' => 0,
                 'maxitems' => 1,
             ],

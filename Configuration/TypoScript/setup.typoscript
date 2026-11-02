@@ -14,38 +14,106 @@ plugin.tx_rescuereports_eventlist {
     # dateTo = 0
   }
 }
+
+plugin.tx_rescuereports_sidebar < plugin.tx_rescuereports_eventlist
 plugin.tx_rescuereports_cards < plugin.tx_rescuereports_eventlist
-plugin.tx_rescuereports_cards.settings {
-    maxCount = 6
-    yearFilterDefault = all
-    templateVariant = bootstrap
-    cardImageMode = format
-    cardImageRatio = 16 / 9
-}
+plugin.tx_rescuereports_statistics < plugin.tx_rescuereports_eventlist
+plugin.tx_rescuereports_rss < plugin.tx_rescuereports_eventlist
 
 page.includeCSS.rescueReports = EXT:rescue_reports/Resources/Public/Css/rescue_reports.css
 page.includeCSS.rescueReportsCards = EXT:rescue_reports/Resources/Public/Css/cards.css
 
+config.pageTitleProviders.rescueReports {
+    provider = Nkfire\RescueReports\PageTitle\EventPageTitleProvider
+    before = record
+}
+
 # Leaflet.js (OpenStreetMap-Karte)
-page.includeCSS.leaflet = https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css
-page.includeCSS.leaflet.external = 1
+page.includeCSS.leaflet = EXT:rescue_reports/Resources/Public/Vendor/leaflet/leaflet.css
 page.includeCSS.leaflet.disableCompression = 1
 page.includeCSS.leaflet.excludeFromConcatenation = 1
-page.includeJSFooter.leaflet = https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js
-page.includeJSFooter.leaflet.external = 1
+page.includeJSFooter.leaflet = EXT:rescue_reports/Resources/Public/Vendor/leaflet/leaflet.js
 page.includeJSFooter.leaflet.disableCompression = 1
 page.includeJSFooter.leaflet.excludeFromConcatenation = 1
 page.includeJSFooter.rescueReportsMap = EXT:rescue_reports/Resources/Public/Js/map.js
 page.includeJSFooter.rescueReportsMap.excludeFromConcatenation = 1
-page.includeJSFooter.rescueReportsList = EXT:rescue_reports/Resources/Public/Js/list.js
+page.includeJSFooter.rescueReportsEventShow = EXT:rescue_reports/Resources/Public/Js/event-show.js
 
-plugin.tx_rescuereports_rss {
-    view {
-        templateRootPaths.0 = EXT:rescue_reports/Resources/Private/Templates/
-        layoutRootPaths.0 = EXT:rescue_reports/Resources/Private/Layouts/
-        partialRootPaths.0 = EXT:rescue_reports/Resources/Private/Partials/
+# Plugin rendering definitions
+tt_content.list.20.rescuereports_eventlist = USER
+tt_content.list.20.rescuereports_eventlist {
+    userFunc = TYPO3\CMS\Extbase\Core\Bootstrap->run
+    extensionName = RescueReports
+    pluginName = Eventlist
+    vendorName = Nkfire
+    controller = Event
+    action = list
+    switchableControllerActions {
+        Event {
+            1 = list
+            2 = show
+        }
     }
-    persistence < plugin.tx_rescuereports_eventlist.persistence
+}
+
+tt_content.list.20.rescuereports_sidebar = USER
+tt_content.list.20.rescuereports_sidebar {
+    userFunc = TYPO3\CMS\Extbase\Core\Bootstrap->run
+    extensionName = RescueReports
+    pluginName = Sidebar
+    vendorName = Nkfire
+    controller = Event
+    action = list
+    switchableControllerActions {
+        Event {
+            1 = list
+        }
+    }
+}
+
+tt_content.list.20.rescuereports_cards = USER
+tt_content.list.20.rescuereports_cards {
+    userFunc = TYPO3\CMS\Extbase\Core\Bootstrap->run
+    extensionName = RescueReports
+    pluginName = Cards
+    vendorName = Nkfire
+    controller = Event
+    action = cards
+    switchableControllerActions {
+        Event {
+            1 = cards
+        }
+    }
+}
+
+tt_content.list.20.rescuereports_statistics = USER
+tt_content.list.20.rescuereports_statistics {
+    userFunc = TYPO3\CMS\Extbase\Core\Bootstrap->run
+    extensionName = RescueReports
+    pluginName = Statistics
+    vendorName = Nkfire
+    controller = Event
+    action = statistics
+    switchableControllerActions {
+        Event {
+            1 = statistics
+        }
+    }
+}
+
+tt_content.list.20.rescuereports_rss = USER
+tt_content.list.20.rescuereports_rss {
+    userFunc = TYPO3\CMS\Extbase\Core\Bootstrap->run
+    extensionName = RescueReports
+    pluginName = Rss
+    vendorName = Nkfire
+    controller = Event
+    action = rss
+    switchableControllerActions {
+        Event {
+            1 = rss
+        }
+    }
 }
 
 # RSS-Feed-Seitentyp: seite?type=100 liefert reines XML ohne HTML-Rahmen

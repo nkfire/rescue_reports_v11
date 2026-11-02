@@ -35,12 +35,18 @@ class Event extends AbstractEntity
     /** @var ObjectStorage<Type> */
     protected ObjectStorage $types;
 
+    /** @var ObjectStorage<Type> */
+    protected ObjectStorage $keywordEscalation;
+
+    protected bool $enableKeywordEscalation = false;
+
     public function __construct()
     {
         $this->vehicles = new ObjectStorage();
         $this->stations = new ObjectStorage();
         $this->images = new ObjectStorage();
         $this->types = new ObjectStorage();
+        $this->keywordEscalation = new ObjectStorage();
     }
 
     public function getTitle(): string
@@ -271,5 +277,36 @@ class Event extends AbstractEntity
     public function setDisableDetail(bool $disableDetail): void
     {
         $this->disableDetail = $disableDetail;
+    }
+
+    /** @return ObjectStorage<Type> */
+    public function getKeywordEscalation(): ObjectStorage
+    {
+        return $this->keywordEscalation;
+    }
+
+    public function setKeywordEscalation(ObjectStorage $keywordEscalation): void
+    {
+        $this->keywordEscalation = $keywordEscalation;
+    }
+
+    public function addKeywordEscalation(Type $type): void
+    {
+        $this->keywordEscalation->attach($type);
+    }
+
+    public function removeKeywordEscalation(Type $type): void
+    {
+        $this->keywordEscalation->detach($type);
+    }
+
+    public function getEnableKeywordEscalation(): bool
+    {
+        return $this->enableKeywordEscalation;
+    }
+
+    public function setEnableKeywordEscalation(bool $enableKeywordEscalation): void
+    {
+        $this->enableKeywordEscalation = $enableKeywordEscalation;
     }
 }

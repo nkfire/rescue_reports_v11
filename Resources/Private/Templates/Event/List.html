@@ -39,13 +39,13 @@
 
                 <f:if condition="{showStationFilter}">
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Ortsfeuerwehr</label>
+                        <label class="form-label fw-semibold">Ortsfeuerwehr auswählen</label>
                         <f:form action="list" method="post">
                             <f:form.hidden name="year" value="{selectedYear}" />
                             <f:form.hidden name="dateFrom" value="{dateFromStr}" />
                             <f:form.hidden name="dateTo" value="{dateToStr}" />
                             <div class="row g-2 align-items-stretch">
-                                <div class="col-12 col-md-6">
+                                <div class="col-12 col-md-6 col-lg-4">
                                     <f:form.select
                                         name="station"
                                         options="{stations}"
@@ -68,7 +68,7 @@
                             <f:form.hidden name="dateFrom" value="{dateFromStr}" />
                             <f:form.hidden name="dateTo" value="{dateToStr}" />
                             <div class="row g-2 align-items-stretch">
-                                <div class="col-12 col-md-6">
+                                <div class="col-12 col-md-6 col-lg-4">
                                     <f:form.select
                                         name="year"
                                         value="{selectedYear}"
@@ -87,7 +87,7 @@
 
                 <f:if condition="{showBlockStatistics}">
                     <f:if condition="{statisticsPosition} == 'above'">
-                        <f:render partial="Statistics/PieChart" arguments="{statistics: statistics, title: 'Einsatzstatistik'}" />
+                        <f:render partial="Statistics/PieChart" arguments="{statistics: statistics, title: statisticsTitle, hideYearInSummary: selectedYear}" />
                     </f:if>
                 </f:if>
 
@@ -127,38 +127,12 @@
                 </f:if>
 
                 <f:if condition="{enableSearch}">
-                    <div class="card mb-1 border-0">
-                        <div class="card-body">
+                    <div class="mb-4">
                             <h3 class="fs-6 fw-semibold text-muted mb-3">Einsätze suchen und filtern</h3>
                             <f:form action="list" method="post">
-                                <!-- Zeile 1: Stations-/Jahr-/Datumsfilter -->
-                                <div class="row g-2 align-items-end mb-2">
-                                    <div class="col-12 col-md-4">
-                                        <label class="form-label small">Ortsfeuerwehr</label>
-                                        <f:form.select
-                                            name="station"
-                                            options="{stations}"
-                                            optionLabelField="name"
-                                            optionValueField="uid"
-                                            value="{activeStationUid}"
-                                            class="form-select" />
-                                    </div>
-
-                                    <f:if condition="{enableYearFilter}">
-                                        <div class="col-12 col-md-2">
-                                            <label class="form-label small">Jahr</label>
-                                            <f:form.select
-                                                name="year"
-                                                value="{selectedYear}"
-                                                class="form-select">
-                                                <f:form.select.option value="0">Alle</f:form.select.option>
-                                                <f:for each="{availableYears}" as="y">
-                                                    <f:form.select.option value="{y}">{y}</f:form.select.option>
-                                                </f:for>
-                                            </f:form.select>
-                                        </div>
-                                    </f:if>
-
+                                <f:form.hidden name="year" value="{selectedYear}" />
+                                <!-- Zeile 1: optionale Datumsfilter; Jahresauswahl steht separat darüber -->
+                                <div class="row g-2 align-items-end mb-3">
                                     <f:if condition="{enableDateFilter}">
                                         <div class="col-12 col-md-3">
                                             <label class="form-label small">Von</label>
@@ -179,7 +153,7 @@
                                     </f:if>
                                 </div>
 
-                                <!-- Zeile 2: Suchfeld + Buttons (immer gleiche Breite) -->
+                                <!-- Zeile 2: Suchfeld und Aktionen -->
                                 <div class="row g-2 align-items-end">
                                     <div class="col-12 col-md-8">
                                         <label class="form-label small">Suchbegriff</label>
@@ -202,20 +176,17 @@
                                         <f:link.action
                                             action="list"
                                             arguments="{searchWord: '', station: 0, year: 0, dateFrom: '', dateTo: ''}"
-                                            class="btn btn-outline-secondary w-100">
+                                            class="btn rescue-search-reset w-100">
                                             Reset
                                         </f:link.action>
                                     </div>
                                 </div>
+                                <div class="form-text mt-1">Suche nach Stichwort, Ort, Einsatznummer oder Datum (z. B. 29.08.2026).</div>
                             </f:form>
-                        </div>
                     </div>
                 </f:if>
 
-                <f:if condition="{listLayout} == 'compact'">
-                    <f:then><f:render partial="List/Compact" arguments="{_all}" /></f:then>
-                    <f:else><f:render section="EventListContentNewDesign" arguments="{_all}" /></f:else>
-                </f:if>
+                <f:render section="EventListContentNewDesign" arguments="{_all}" />
             </div>
         </f:case>
 
@@ -253,7 +224,7 @@
 
             <f:if condition="{showBlockStatistics}">
                 <f:if condition="{statisticsPosition} == 'above'">
-                    <f:render partial="Statistics/PieChart" arguments="{statistics: statistics, title: 'Einsatzstatistik'}" />
+                    <f:render partial="Statistics/PieChart" arguments="{statistics: statistics, title: statisticsTitle, hideYearInSummary: selectedYear}" />
                 </f:if>
             </f:if>
 
@@ -371,10 +342,7 @@
                 </div>
             </f:if>
 
-            <f:if condition="{listLayout} == 'compact'">
-                    <f:then><f:render partial="List/Compact" arguments="{_all}" /></f:then>
-                    <f:else><f:render section="EventListContent" arguments="{_all}" /></f:else>
-                </f:if>
+            <f:render section="EventListContent" arguments="{_all}" />
         </f:case>
 
     </f:switch>
@@ -382,7 +350,7 @@
     <f:if condition="{showBlockStatistics}">
         <f:if condition="{statisticsPosition} != 'above'">
             <hr class="my-4">
-            <f:render partial="Statistics/PieChart" arguments="{statistics: statistics, title: 'Einsatzstatistik'}" />
+            <f:render partial="Statistics/PieChart" arguments="{statistics: statistics, title: statisticsTitle, hideYearInSummary: selectedYear}" />
         </f:if>
     </f:if>
 
@@ -398,20 +366,14 @@
      Foundation-Ausgabeliste
 ========================================================== -->
 <f:section name="EventListContent">
+    <f:if condition="{hasSearchQuery}">
+        <p class="result-info" style="margin-top:10px;" role="status" aria-live="polite">
+            <strong>{searchResultCount}</strong>
+            <f:if condition="{searchResultCount} == 1"> Einsatz</f:if><f:if condition="{searchResultCount} != 1"> Einsätze</f:if><f:if condition="{searchResultContext}"> {searchResultContext}</f:if> gefunden.
+        </p>
+    </f:if>
     <f:if condition="{events}">
         <f:then>
-            <f:if condition="{searchWord}">
-                <div class="result-info" style="margin-top:10px;">
-                    <strong>{events -> f:count()}</strong>
-                    <f:if condition="{events -> f:count()} == 1">
-                        Einsatz gefunden
-                    </f:if>
-                    <f:if condition="{events -> f:count()} != 1">
-                        Einsätze gefunden
-                    </f:if>
-                </div>
-            </f:if>
-
             <f:if condition="{yearGroupsWithStats}">
                 <f:then>
                 <div class="year-jump-nav" style="margin: 0 0 10px;">
@@ -582,20 +544,14 @@
      Bootstrap-Ausgabeliste
 ========================================================== -->
 <f:section name="EventListContentNewDesign">
+    <f:if condition="{hasSearchQuery}">
+        <p class="result-info mt-3" role="status" aria-live="polite">
+            <strong>{searchResultCount}</strong>
+            <f:if condition="{searchResultCount} == 1"> Einsatz</f:if><f:if condition="{searchResultCount} != 1"> Einsätze</f:if><f:if condition="{searchResultContext}"> {searchResultContext}</f:if> gefunden.
+        </p>
+    </f:if>
     <f:if condition="{events}">
         <f:then>
-            <f:if condition="{searchWord}">
-                <div class="result-info mt-3">
-                    <strong>{events -> f:count()}</strong>
-                    <f:if condition="{events -> f:count()} == 1">
-                        Einsatz gefunden
-                    </f:if>
-                    <f:if condition="{events -> f:count()} != 1">
-                        Einsätze gefunden
-                    </f:if>
-                </div>
-            </f:if>
-
             <f:if condition="{yearGroupsWithStats}">
                 <f:then>
                 <div class="year-jump-nav mb-2 small">

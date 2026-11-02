@@ -7,10 +7,20 @@
             <f:for each="{statistics}" as="yearData" key="year">
                 <div class="rescue-statistics__year">
                     <h3 class="rescue-statistics__year-title">
-                        {year}
-                        <span class="rescue-statistics__total">({yearData.total} Einsätze gesamt)</span>
-                        <f:if condition="{yearData.yearTotalDuration}">
-                            <span class="rescue-statistics__total">— Gesamtdauer: {yearData.yearTotalDuration}</span>
+                        <f:if condition="{hideYearInSummary}">
+                            <f:then>
+                                <span class="rescue-statistics__total" style="margin-left:0;">{yearData.total} Einsätze gesamt</span>
+                                <f:if condition="{yearData.yearTotalDuration}">
+                                    <span class="rescue-statistics__total">— Gesamtdauer: {yearData.yearTotalDuration}</span>
+                                </f:if>
+                            </f:then>
+                            <f:else>
+                                {year}
+                                <span class="rescue-statistics__total">{yearData.total} Einsätze gesamt</span>
+                                <f:if condition="{yearData.yearTotalDuration}">
+                                    <span class="rescue-statistics__total">— Gesamtdauer: {yearData.yearTotalDuration}</span>
+                                </f:if>
+                            </f:else>
                         </f:if>
                     </h3>
                     <div class="rescue-statistics__layout">
@@ -21,12 +31,12 @@
                                         <f:if condition="{slice.type} == 'circle'">
                                             <f:then>
                                             <circle cx="110" cy="110" r="100" fill="{slice.color}" class="pie-slice pie-slice--{slice.categoryUid}" data-category-uid="{slice.categoryUid}">
-                                                <title>{slice.title}: {slice.count} Einsätze ({slice.percent} %)</title>
+                                                <noscript><title>{slice.title}: {slice.count} Einsätze ({slice.percent} %)</title></noscript>
                                             </circle>
                                             </f:then>
                                             <f:else>
                                                 <path d="{slice.d}" fill="{slice.color}" class="pie-slice pie-slice--{slice.categoryUid}" data-category-uid="{slice.categoryUid}">
-                                                    <title>{slice.title}: {slice.count} Einsätze ({slice.percent} %)</title>
+                                                    <noscript><title>{slice.title}: {slice.count} Einsätze ({slice.percent} %)</title></noscript>
                                                 </path>
                                             </f:else>
                                         </f:if>
@@ -48,7 +58,7 @@
                                                 </f:for>
                                             </ul>
                                         </f:if>
-                                        <span class="pie-tooltip__meta">{cat.count} Einsätze · {cat.percent} %</span>
+                                        <span class="pie-tooltip__meta">{cat.count} Einsätze · {cat.percent} % · Dauer: {cat.totalDuration}</span>
                                     </div>
                                 </f:for>
                             </div>
@@ -58,10 +68,11 @@
                                 <thead>
                                     <tr>
                                         <th></th>
-                                        <th>Kategorie</th>
-                                        <th class="rescue-statistics__num">Anzahl</th>
-                                        <th class="rescue-statistics__num">Anteil</th>
+                                        <th><f:translate key="LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:statistics.category" /></th>
+                                        <th class="rescue-statistics__num"><f:translate key="LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:statistics.count" /></th>
+                                        <th class="rescue-statistics__num"><f:translate key="LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:statistics.share" /></th>
                                         <th class="rescue-statistics__num">Ø Dauer</th>
+                                        <th class="rescue-statistics__num">Gesamtdauer</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -72,20 +83,38 @@
                                             <td class="rescue-statistics__num">{cat.count}</td>
                                             <td class="rescue-statistics__num">{cat.percent} %</td>
                                             <td class="rescue-statistics__num">{cat.avgDuration}</td>
+                                            <td class="rescue-statistics__num">{cat.totalDuration}</td>
                                         </tr>
                                     </f:for>
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <td colspan="2"><strong>Gesamt</strong></td>
+                                        <td colspan="2"><strong><f:translate key="LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:statistics.total" /></strong></td>
                                         <td class="rescue-statistics__num"><strong>{yearData.total}</strong></td>
                                         <td class="rescue-statistics__num"><strong>100 %</strong></td>
                                         <td class="rescue-statistics__num">—</td>
+                                        <td class="rescue-statistics__num"><strong>{yearData.yearTotalDuration}</strong></td>
                                     </tr>
                                 </tfoot>
                             </table>
                         </div>
                     </div>
+                    <f:if condition="{yearData.durationExtremes}">
+                        <dl class="rescue-statistics__extremes">
+                            <f:if condition="{yearData.durationExtremes.shortest}">
+                                <div>
+                                    <dt>Kürzester Einsatz</dt>
+                                    <dd>{yearData.durationExtremes.shortest.title} <span>({yearData.durationExtremes.shortest.date}, {yearData.durationExtremes.shortest.duration})</span></dd>
+                                </div>
+                            </f:if>
+                            <f:if condition="{yearData.durationExtremes.longest}">
+                                <div>
+                                    <dt>Längster Einsatz</dt>
+                                    <dd>{yearData.durationExtremes.longest.title} <span>({yearData.durationExtremes.longest.date}, {yearData.durationExtremes.longest.duration})</span></dd>
+                                </div>
+                            </f:if>
+                        </dl>
+                    </f:if>
                     <f:if condition="{yearData.yearCompare}">
                         <p class="rescue-statistics__compare">Im Vergleich zum Vorjahr: {yearData.yearCompare}</p>
                     </f:if>
@@ -93,7 +122,7 @@
             </f:for>
         </f:then>
         <f:else>
-            <p class="rescue-statistics__empty">Keine Einsatzdaten vorhanden.</p>
+            <p class="rescue-statistics__empty"><f:translate key="LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:statistics.empty" /></p>
         </f:else>
     </f:if>
 </div>

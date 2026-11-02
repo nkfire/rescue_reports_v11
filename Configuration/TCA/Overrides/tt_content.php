@@ -64,7 +64,6 @@ use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
 
     $pluginSignatureCards = 'rescuereports_cards';
     $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_addlist'][$pluginSignatureCards] = 'pi_flexform';
-    $GLOBALS['TCA']['tt_content']['types']['list']['subtypes_excludelist'][$pluginSignatureCards] = 'layout,select_key,pages,recursive';
     ExtensionManagementUtility::addPiFlexFormValue(
         $pluginSignatureCards,
         'FILE:EXT:rescue_reports/Configuration/FlexForms/cards.xml'

@@ -6,7 +6,7 @@ imports:
 editor:
   externalPlugins:
     textSnippets:
-      resource: "EXT:rescue_reports/Resources/Public/JavaScript/Plugins/textsnippets/plugin.js"
+      resource: "EXT:rescue_reports/Resources/Public/JavaScript/Plugins/textsnippets/plugin-1.0.5.js"
 
   config:
     toolbar:
@@ -18,3 +18,7 @@ editor:
       - "EXT:rescue_reports/Resources/Public/Css/rte.css"
 
     format_tags: "p;h2"
+
+  # CSS für Modal und andere Backend-Elemente
+  externalCSS:
+    - "EXT:rescue_reports/Resources/Public/Css/textsnippets-modal.css"

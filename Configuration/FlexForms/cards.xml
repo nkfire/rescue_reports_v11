@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <T3DataStructure>
     <sheets>
-        <sheet index="general">
+        <general>
             <ROOT>
-                <sheetTitle>Cards-Widget</sheetTitle>
+                <TCEforms>
+                    <sheetTitle>Cards-Widget</sheetTitle>
+                </TCEforms>
                 <type>array</type>
                 <el>
 
@@ -206,6 +208,6 @@
 
                 </el>
             </ROOT>
-        </sheet>
+        </general>
     </sheets>
 </T3DataStructure>

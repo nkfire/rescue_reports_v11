@@ -153,6 +153,15 @@
                                         </f:for>
                                     </p>
 
+                                    <f:if condition="{event.keywordEscalation -> f:count()}">
+                                        <p class="mb-2">
+                                            <strong>Stichworterhöhung auf:</strong><br>
+                                            <f:for each="{event.keywordEscalation}" as="keyword" iteration="it">
+                                                {keyword.title}<f:if condition="!{it.isLast}">, </f:if>
+                                            </f:for>
+                                        </p>
+                                    </f:if>
+
                                     <p class="mb-2">
                                         <strong>Einsatzort:</strong><br>
                                         {event.location}
@@ -163,8 +172,7 @@
                                              data-lat="{event.latitude}"
                                              data-lon="{event.longitude}"
                                              data-title="{event.title}"
-                                             class="mb-2 rounded overflow-hidden"
-                                             style="height:220px;"></div>
+                                             class="rr-event-map mb-2 rounded overflow-hidden"></div>
                                     </f:if>
 
                                     <p class="mb-2">
@@ -188,15 +196,18 @@
                             <f:if condition="{event.images}">
                                 <h2 class="h4">Bilder</h2>
 
-                                <div id="einsatzCarousel-{event.uid}" class="carousel slide" data-bs-ride="false">
+                                <div id="einsatzCarousel-{event.uid}" class="carousel slide rescue-image-gallery" data-bs-ride="false" tabindex="0" role="region" aria-label="Bildergalerie. Mit den Pfeiltasten zwischen den Bildern wechseln.">
                                     <div class="carousel-inner">
                                         <f:for each="{event.images}" as="image" iteration="it">
                                             <div class="carousel-item {f:if(condition: it.isFirst, then: 'active')}">
-                                                <a href="{f:uri.image(image: image, maxWidth: 1800)}"
-                                                   class="glightbox"
-                                                   data-gallery="einsatz-{event.uid}">
-                                                    <f:image image="{image}" maxWidth="900" alt="{event.title}" class="d-block w-100 h-100 img-fluid rounded" additionalAttributes="{loading:'lazy'}" />
-                                                </a>
+                                                <figure class="rescue-image-figure">
+                                                    <a href="{f:uri.image(image: image, maxWidth: 1800)}"
+                                                       class="glightbox"
+                                                       data-gallery="einsatz-{event.uid}"
+                                                       aria-label="Bild in Großansicht öffnen">
+                                                        <f:image image="{image}" maxWidth="900" alt="{f:if(condition: image.alternative, then: image.alternative, else: event.title)}" class="d-block w-100 h-100 img-fluid rounded" additionalAttributes="{loading:'lazy'}" />
+                                                    </a>
+                                                </figure>
                                             </div>
                                         </f:for>
                                     </div>
@@ -331,7 +342,14 @@
                                         {type.title}<f:if condition="!{it.isLast}">, </f:if>
                                     </f:for>
                                 </p>
-
+                                <f:if condition="{event.keywordEscalation -> f:count()}">
+                                    <p>
+                                        <b>Stichworterhöhung auf:</b><br />
+                                        <f:for each="{event.keywordEscalation}" as="keyword" iteration="it">
+                                            {keyword.title}<f:if condition="!{it.isLast}">, </f:if>
+                                        </f:for>
+                                    </p>
+                                </f:if>
                                 <p><b>Einsatzort:</b><br />{event.location}</p>
                                 <p><b>Einsatzbeginn:</b><br /><f:format.date format="d.m.Y H:i">{event.start}</f:format.date> Uhr</p>
                                 <p><b>Einsatzende:</b><br /><f:format.date format="d.m.Y H:i">{event.end}</f:format.date> Uhr</p>
@@ -342,30 +360,19 @@
                         <div class="large-12 medium-6 small-12 column">
                             <f:if condition="{event.images}">
                                 <h2><b>Einsatzbilder:</b></h2>
-                                <div id="einsatzslider" class="owl-carousel">
+                                <div id="einsatzslider" class="owl-carousel rescue-image-gallery" tabindex="0" role="region" aria-label="Bildergalerie. Mit den Pfeiltasten zwischen den Bildern wechseln.">
                                     <f:for each="{event.images}" as="image">
-                                        <a href="{f:uri.image(image: image, maxWidth: 1600)}"
-                                           class="glightbox"
-                                           data-gallery="einsatz-{event.uid}">
-                                            <f:image image="{image}" maxWidth="400" alt="{event.title}" />
-                                        </a>
+                                        <figure class="rescue-image-figure">
+                                            <a href="{f:uri.image(image: image, maxWidth: 1600)}"
+                                               class="glightbox"
+                                               data-gallery="einsatz-{event.uid}"
+                                               aria-label="Bild in Großansicht öffnen">
+                                                <f:image image="{image}" maxWidth="400" alt="{f:if(condition: image.alternative, then: image.alternative, else: event.title)}" />
+                                            </a>
+                                        </figure>
                                     </f:for>
                                 </div>
 
-                                <script>
-                                $(document).ready(function() {
-                                    $("#einsatzslider").owlCarousel({
-                                        singleItem: true,
-                                        navigation: true,
-                                        navigationText: ["zurück", "weiter"],
-                                        slideSpeed: 400,
-                                        autoHeight: true,
-                                        lazyLoad: true,
-                                        lazyFollow: true,
-                                        addClassActive: true
-                                    });
-                                });
-                                </script>
                             </f:if>
                         </div>
                     </div>
@@ -379,11 +386,4 @@
 
     </f:switch>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof GLightbox !== 'undefined') {
-            GLightbox({ selector: '.glightbox' });
-        }
-    });
-    </script>
 </f:section>

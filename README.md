@@ -44,9 +44,10 @@ Hauptansicht mit Listenansicht und Detailansicht der Einsätze.
 | **Jahresfilter anzeigen** | Jahresauswahl im Frontend | Ja |
 | **Jahresfilter: Standardauswahl beim ersten Aufruf** | „Alle Jahre" oder „Aktuelles Jahr" | Alle Jahre |
 | **Statistik anzeigen** | Tortendiagramm-Statistik einblenden | Nein |
+| **Längsten Einsatz anzeigen** | Längster abgeschlossener Einsatz je Statistikjahr | Nein |
+| **Kürzesten Einsatz anzeigen** | Kürzester abgeschlossener Einsatz je Statistikjahr | Nein |
 | **Statistik: Anzahl angezeigter Jahre** | 0 = alle Jahre | 0 |
 | **Position der Statistik** | Oberhalb oder unterhalb der Einsatzliste | Unterhalb |
-| **Darstellung der Einsatzliste** | „Kompakt“ (Monatsgruppen, Stichwort, Filter) oder „Klassisch“ | Kompakt |
 | **Kartenansicht anzeigen** | OpenStreetMap-Karte einblenden | Nein |
 | **Kartenhöhe in Pixeln** | | 400 |
 | **Standard-Zoomstufe (1–19)** | | 11 |
@@ -57,17 +58,6 @@ Hauptansicht mit Listenansicht und Detailansicht der Einsätze.
 - Ist „Alle Jahre" gewählt, werden Einsätze jahresweise gruppiert mit Sprungmarken-Navigation und optionaler Inline-Statistik je Jahresgruppe.
 - Ist „Aktuelles Jahr" gewählt, wird die Liste beim ersten Aufruf automatisch auf das laufende Jahr gefiltert; der Besucher kann per Jahresauswahl wechseln.
 - **„Jahresfilter anzeigen"** steuert nur die Sichtbarkeit der Jahresauswahl im Frontend – der Datenbereich und die Gruppierung sind davon unabhängig.
-
-#### Kompakte Einsatzliste
-
-Standard für das Bootstrap- und das Foundation-Design (umschaltbar auf „Klassisch“):
-
-- Einsätze nach **Monaten gruppiert**, jeweils mit Anzahl
-- links ein **Datumsblock** (Tag, Monat, Wochentag), am Rand die **Farbe der Einsatzkategorie**
-- **Alarmstichwort** als farbiges Kürzel (Titel des Einsatztyps, z. B. „TH1“, „BMA“), Schriftfarbe automatisch lesbar
-- Uhrzeit mit **Einsatzdauer**, Kennzeichen **„nachts“** (Alarm 22–6 Uhr), Einsatzort
-- **Filter** nach Kategorie und „nachts“ ohne Neuladen (oben angeheftet, ohne JavaScript ausgeblendet)
-- die ganze Zeile ist klickbar, jede Zeile hat den Sprunganker `#einsatz-{uid}`
 
 #### Statistik
 
@@ -87,33 +77,14 @@ Eigenständige Statistikseite mit Jahres- und Monatsdiagrammen.
 | **Stationsauswahl im Frontend anzeigen** | | Ja |
 | **Anzahl angezeigter Jahre** | 0 = alle | 0 |
 | **Monatsvergleich anzeigen** | Monatliches Balkendiagramm | Ja |
+| **Kategorie-Statistik anzeigen** | Kreisdiagramm und Kategorien-Tabelle der ausgewählten Ortsfeuerwehr | Ja |
+| **Längsten Einsatz anzeigen** | Längster abgeschlossener Einsatz je Statistikjahr | Nein |
+| **Kürzesten Einsatz anzeigen** | Kürzester abgeschlossener Einsatz je Statistikjahr | Nein |
+| **Jahresübersicht aller Ortsfeuerwehren anzeigen** | Aktuelles Jahr: Einsätze und Einsatzzeit je Ortsfeuerwehr, mit Summe | Nein |
 
 ---
 
-### 3. Cards-Widget (`tx_rescuereports_cards`)
-
-Kartenansicht für aktuelle Einsätze mit Bild, Titel und Verlinkung zur Detailansicht, z. B. für die Startseite. Einsätze mit „Detailansicht deaktivieren“ werden nicht gezeigt.
-
-In dieser v11-Version kommt das Kartenbild aus den Einsatzbildern (erstes Bild); Einsätze ohne Bild zeigen eine leere Bildfläche.
-
-**Aktion:** `cards`
-
-| Einstellung | Beschreibung | Standard |
-|---|---|---|
-| **Widget-Überschrift** | Überschrift oberhalb der Karten | – |
-| **Standard-Ortsfeuerwehr** | Vorausgewählte Station | – (alle) |
-| **Anzahl angezeigter Einsätze** | Maximale Anzahl der Karten | 6 |
-| **Bildverarbeitung** | Responsive Bildformat oder Servercrop | Responsive Bildformat |
-| **Bildformat** | Sichtbarer Zuschnitt: 16:9, 4:3 oder 1:1 | 16:9 |
-| **Servercrop-Breite / -Höhe** | Erzeugte Bildgröße in Pixeln, jeweils 1–4000 | 800 × 500 |
-| **Seite für Einsatz-Detailansicht** | Zielseite der Karten | – |
-| **Seite der vollständigen Einsatzliste** | Ziel des „Alle Einsätze“-Links | – |
-
-Bei **Responsive Bildformat** passt sich das Bild der Kartenbreite an und wird per `object-fit: cover` im gewählten Seitenverhältnis dargestellt. Bei **Servercrop** erzeugt TYPO3 ein verarbeitetes Bild mit den konfigurierten Pixelmaßen; im Frontend wird dieses anschließend proportional skaliert.
-
-Bestehende Content-Elemente ohne die neuen Werte bleiben kompatibel und verwenden 16:9 beziehungsweise 800 × 500 als sichere Fallback-Werte.
-
-### 4. Sidebar-Widget (`tx_rescuereports_sidebar`)
+### 3. Sidebar-Widget (`tx_rescuereports_sidebar`)
 
 Kompaktes Widget für die Seitenleiste – zeigt die letzten N Einsätze.
 
@@ -130,7 +101,7 @@ Kompaktes Widget für die Seitenleiste – zeigt die letzten N Einsätze.
 
 ---
 
-### 5. RSS-Feed (`tx_rescuereports_rss`)
+### 4. RSS-Feed (`tx_rescuereports_rss`)
 
 RSS 2.0-Feed der neuesten Einsätze.
 

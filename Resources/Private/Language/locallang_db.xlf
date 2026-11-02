@@ -107,6 +107,21 @@
       <trans-unit id="cards.empty">
         <source>Keine Einsätze gefunden.</source>
       </trans-unit>
+      <trans-unit id="statistics.category">
+        <source>Kategorie</source>
+      </trans-unit>
+      <trans-unit id="statistics.count">
+        <source>Anzahl</source>
+      </trans-unit>
+      <trans-unit id="statistics.share">
+        <source>Anteil</source>
+      </trans-unit>
+      <trans-unit id="statistics.total">
+        <source>Gesamt</source>
+      </trans-unit>
+      <trans-unit id="statistics.empty">
+        <source>Keine Einsatzdaten vorhanden.</source>
+      </trans-unit>
       <trans-unit id="cards.imageMode">
         <source>Bildverarbeitung</source>
       </trans-unit>
@@ -125,6 +140,7 @@
       <trans-unit id="cards.imageHeight">
         <source>Servercrop-Höhe (px)</source>
       </trans-unit>
+
     </body>
   </file>
 </xliff>

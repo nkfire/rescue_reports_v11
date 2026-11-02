@@ -1,0 +1,18 @@
+<f:for each="{statistics}" as="yearData">
+    <f:if condition="{yearData.durationExtremes}">
+        <dl class="rescue-statistics__extremes rescue-statistics__extremes--standalone">
+            <f:if condition="{yearData.durationExtremes.shortest}">
+                <div>
+                    <dt>Kürzester Einsatz</dt>
+                    <dd>{yearData.durationExtremes.shortest.title} <span>({yearData.durationExtremes.shortest.date}, {yearData.durationExtremes.shortest.duration})</span></dd>
+                </div>
+            </f:if>
+            <f:if condition="{yearData.durationExtremes.longest}">
+                <div>
+                    <dt>Längster Einsatz</dt>
+                    <dd>{yearData.durationExtremes.longest.title} <span>({yearData.durationExtremes.longest.date}, {yearData.durationExtremes.longest.duration})</span></dd>
+                </div>
+            </f:if>
+        </dl>
+    </f:if>
+</f:for>
