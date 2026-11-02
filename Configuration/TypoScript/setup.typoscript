@@ -38,6 +38,7 @@ page.includeJSFooter.leaflet.excludeFromConcatenation = 1
 page.includeJSFooter.rescueReportsMap = EXT:rescue_reports/Resources/Public/Js/map.js
 page.includeJSFooter.rescueReportsMap.excludeFromConcatenation = 1
 page.includeJSFooter.rescueReportsEventShow = EXT:rescue_reports/Resources/Public/Js/event-show.js
+page.includeJSFooter.rescueReportsList = EXT:rescue_reports/Resources/Public/Js/list.js
 
 # Plugin rendering definitions
 tt_content.list.20.rescuereports_eventlist = USER

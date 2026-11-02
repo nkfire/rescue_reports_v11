@@ -9,6 +9,12 @@ Diese Liste wird bei Änderungen an gemeinsam gepflegten Funktionen verwendet.
 - CSS auf die jeweilige Markup-Struktur begrenzen: v11 verwendet `.card-link`, v14 `.rescue-card-item`.
 - Neue sichtbare Texte in beiden `locallang_db.xlf` ergänzen.
 
+## Kompakte Einsatzliste
+
+- Stichwort und Kategorie folgen der Stichworterhöhung (`CompactListBuilder::effectiveTypes`), wie die Jahresstatistik.
+- „nachts“ = Alarm zwischen 22:00 und 5:59 Uhr, maßgeblich ist der Einsatzbeginn.
+- Filter (`list.js`) ohne JavaScript ausgeblendet lassen; Liste muss vollständig sichtbar bleiben.
+
 ## Einsatz-Detailansicht
 
 - Bootstrap- und Foundation-Ausgabe kontrollieren.

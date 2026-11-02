@@ -48,6 +48,7 @@ Hauptansicht mit Listenansicht und Detailansicht der Einsätze.
 | **Kürzesten Einsatz anzeigen** | Kürzester abgeschlossener Einsatz je Statistikjahr | Nein |
 | **Statistik: Anzahl angezeigter Jahre** | 0 = alle Jahre | 0 |
 | **Position der Statistik** | Oberhalb oder unterhalb der Einsatzliste | Unterhalb |
+| **Darstellung der Einsatzliste** | „Kompakt“ (Monatsgruppen, Stichwort, Filter) oder „Klassisch“ | Kompakt |
 | **Kartenansicht anzeigen** | OpenStreetMap-Karte einblenden | Nein |
 | **Kartenhöhe in Pixeln** | | 400 |
 | **Standard-Zoomstufe (1–19)** | | 11 |
@@ -58,6 +59,17 @@ Hauptansicht mit Listenansicht und Detailansicht der Einsätze.
 - Ist „Alle Jahre" gewählt, werden Einsätze jahresweise gruppiert mit Sprungmarken-Navigation und optionaler Inline-Statistik je Jahresgruppe.
 - Ist „Aktuelles Jahr" gewählt, wird die Liste beim ersten Aufruf automatisch auf das laufende Jahr gefiltert; der Besucher kann per Jahresauswahl wechseln.
 - **„Jahresfilter anzeigen"** steuert nur die Sichtbarkeit der Jahresauswahl im Frontend – der Datenbereich und die Gruppierung sind davon unabhängig.
+
+#### Kompakte Einsatzliste
+
+Standard für das Bootstrap- und das Foundation-Design (umschaltbar auf „Klassisch“):
+
+- Einsätze nach **Monaten gruppiert**, jeweils mit Anzahl
+- links ein **Datumsblock** (Tag, Monat, Wochentag), am Rand die **Farbe der Einsatzkategorie**
+- **Alarmstichwort** als farbiges Kürzel; bei aktivierter **Stichworterhöhung** zählt das erhöhte Stichwort (wie in der Jahresstatistik), Schriftfarbe automatisch lesbar
+- Uhrzeit mit **Einsatzdauer**, Kennzeichen **„nachts“** (Alarm 22–6 Uhr, maßgeblich ist der Einsatzbeginn), Einsatzort
+- **Filter** nach Kategorie und „nachts“ ohne Neuladen (oben angeheftet, ohne JavaScript ausgeblendet)
+- die ganze Zeile ist klickbar, jede Zeile hat den Sprunganker `#einsatz-{uid}`
 
 #### Statistik
 

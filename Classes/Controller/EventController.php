@@ -5,6 +5,7 @@ use Nkfire\RescueReports\Domain\Model\Event;
 use Nkfire\RescueReports\Domain\Repository\EventRepository;
 use Nkfire\RescueReports\Domain\Repository\StationRepository;
 use Nkfire\RescueReports\PageTitle\EventPageTitleProvider;
+use Nkfire\RescueReports\Utility\CompactListBuilder;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use PDO;
@@ -222,6 +223,15 @@ class EventController extends ActionController
         }
         // Block-Statistik nur anzeigen wenn keine Jahresgruppen aktiv (dann erfolgt Inline-Rendering)
         $showBlockStatistics = $showStatistics && empty($eventItemsByYear);
+        // Listen-Layout: "compact" (Monatsgruppen, Kategorie-Filter) oder "classic" (bisherige Zeilen).
+        // Standard "compact", auch für bestehende Plugins ohne gespeicherten FlexForm-Wert.
+        $listLayout = (string)($this->settings['listLayout'] ?? '') === 'classic' ? 'classic' : 'compact';
+        $compactList = [];
+        if ($listLayout === 'compact' && !$this->excludeDisabledDetail && in_array($templateVariant, ['bootstrap', 'foundation'], true)) {
+            $compactList = GeneralUtility::makeInstance(CompactListBuilder::class)
+                ->build($eventItems, $statistics, $eventItemsByYear !== []);
+        }
+
         $statisticsTitle = 'Einsatzstatistik';
         if ($selectedYear > 0) {
             $statisticsTitle .= ' ' . $selectedYear;
@@ -264,6 +274,8 @@ class EventController extends ActionController
             'activeStationName'   => $activeStationName,
             'showMapView'         => $showMapView,
             'mapPosition'         => $mapPosition,
+            'listLayout'          => $listLayout,
+            'compactList'         => $compactList,
         ]);
 
         return $this->htmlResponse();

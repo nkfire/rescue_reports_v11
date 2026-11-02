@@ -1,0 +1,120 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<!--
+    Kompakte Einsatzliste: Monatsgruppen, Kategorie-Farbe und Alarmstichwort,
+    Uhrzeit mit Dauer, Nacht-Kennzeichen, Kategorie-Filter ohne Neuladen.
+    Erwartet: compactList (CompactListBuilder), activeStationUid, detailPageUid,
+    showStatistics, statisticsPosition, hasSearchQuery, searchResultCount, searchResultContext.
+-->
+<f:if condition="{compactList.total}">
+    <f:then>
+        <div class="rr-list" data-rr-list>
+            <f:if condition="{hasSearchQuery}">
+                <p class="rr-list__result" role="status" aria-live="polite">
+                    <strong>{searchResultCount}</strong>
+                    <f:if condition="{searchResultCount} == 1"><f:then>Einsatz</f:then><f:else>Einsätze</f:else></f:if><f:if condition="{searchResultContext}"> {searchResultContext}</f:if> gefunden.
+                </p>
+            </f:if>
+
+            <f:if condition="{compactList.categories -> f:count()} > 1">
+                <div class="rr-list__filter" role="toolbar" aria-label="Einsätze filtern" data-rr-filter hidden>
+                    <button type="button" class="rr-list__chip" aria-pressed="true" data-rr-cat="">
+                        Alle <span class="rr-list__chip-n">{compactList.total}</span>
+                    </button>
+                    <f:for each="{compactList.categories}" as="category">
+                        <button type="button" class="rr-list__chip" aria-pressed="false" data-rr-cat="{category.key}" style="--rr-cat: {category.color}">
+                            <span class="rr-list__dot" aria-hidden="true"></span>{category.title}
+                            <span class="rr-list__chip-n">{category.count}</span>
+                        </button>
+                    </f:for>
+                    <f:if condition="{compactList.nightCount}">
+                        <button type="button" class="rr-list__chip rr-list__chip--night" aria-pressed="false" data-rr-night>
+                            <span aria-hidden="true">☾</span> nachts <span class="rr-list__chip-n">{compactList.nightCount}</span>
+                        </button>
+                    </f:if>
+                </div>
+                <p class="rr-list__status" aria-live="polite" data-rr-status></p>
+            </f:if>
+
+            <f:if condition="{compactList.years -> f:count()} > 1">
+                <nav class="rr-list__years" aria-label="Sprung zu Jahr">
+                    <f:for each="{compactList.years}" as="yearGroup">
+                        <a href="#event-year-{yearGroup.year}">{yearGroup.year}</a>
+                    </f:for>
+                </nav>
+            </f:if>
+
+            <f:for each="{compactList.years}" as="yearGroup">
+                <f:if condition="{yearGroup.year}">
+                    <h2 class="rr-list__year" id="event-year-{yearGroup.year}">{yearGroup.year}</h2>
+                </f:if>
+                <f:if condition="{showStatistics} && {yearGroup.statistics} && {statisticsPosition} == 'above'">
+                    <f:render partial="Statistics/PieChart" arguments="{statistics: yearGroup.statistics}" />
+                </f:if>
+
+                <f:for each="{yearGroup.months}" as="month">
+                    <section class="rr-list__month" data-rr-month aria-labelledby="rr-month-{month.key}">
+                        <h3 class="rr-list__month-head" id="rr-month-{month.key}">
+                            {month.label}
+                            <span class="rr-list__month-n" data-rr-month-n>{month.count} <f:if condition="{month.count} == 1"><f:then>Einsatz</f:then><f:else>Einsätze</f:else></f:if></span>
+                        </h3>
+                        <ol class="rr-list__items">
+                            <f:for each="{month.items}" as="item">
+                                <f:variable name="event" value="{item.event}" />
+                                <li id="einsatz-{event.uid}"
+                                    class="rr-list__item{f:if(condition: event.disableDetail, else: ' rr-list__item--link')}"
+                                    style="--rr-cat: {item.category.color}; --rr-cat-ink: {item.category.ink}"
+                                    data-rr-item data-rr-cat="{item.categoryKey}" data-rr-night="{f:if(condition: item.isNight, then: '1', else: '0')}">
+                                    <div class="rr-list__date" aria-hidden="true">
+                                        <span class="rr-list__day">{item.day}</span>
+                                        <span class="rr-list__mon">{item.monthShort}</span>
+                                        <span class="rr-list__wd">{item.weekday}</span>
+                                    </div>
+                                    <div class="rr-list__body">
+                                        <p class="rr-list__title">
+                                            <f:if condition="{item.keyword}">
+                                                <span class="rr-list__kw" title="{item.category.title}">{item.keyword}</span>
+                                            </f:if>
+                                            <f:if condition="{event.disableDetail}">
+                                                <f:then><span class="rr-list__name">{event.title}</span></f:then>
+                                                <f:else>
+                                                    <f:link.action action="show" arguments="{event: event, station: activeStationUid}" pageUid="{detailPageUid}" class="rr-list__name">{event.title}</f:link.action>
+                                                </f:else>
+                                            </f:if>
+                                        </p>
+                                        <p class="rr-list__meta">
+                                            <span class="rr-list__sr"><f:format.date format="d.m.Y">{event.start}</f:format.date>, </span>
+                                            <span class="rr-list__time">
+                                                <f:format.date format="H:i">{event.start}</f:format.date><f:if condition="{event.end}">–<f:format.date format="H:i">{event.end}</f:format.date></f:if> Uhr<f:if condition="{event.duration}"> · {event.duration}</f:if>
+                                            </span>
+                                            <f:if condition="{item.isNight}">
+                                                <span class="rr-list__night" title="Alarm zwischen 22 und 6 Uhr"><span aria-hidden="true">☾</span> nachts</span>
+                                            </f:if>
+                                            <f:if condition="{event.location}">
+                                                <span class="rr-list__loc">{event.location}</span>
+                                            </f:if>
+                                        </p>
+                                    </div>
+                                    <span class="rr-list__no" title="Einsatznummer">{item.plainNumber}</span>
+                                </li>
+                            </f:for>
+                        </ol>
+                    </section>
+                </f:for>
+
+                <f:if condition="{showStatistics} && {yearGroup.statistics} && {statisticsPosition} != 'above'">
+                    <f:render partial="Statistics/PieChart" arguments="{statistics: yearGroup.statistics}" />
+                </f:if>
+            </f:for>
+
+            <p class="rr-list__empty" data-rr-empty hidden>Keine Einsätze für diese Auswahl.</p>
+        </div>
+    </f:then>
+    <f:else>
+        <div class="text-center">
+            <img src="https://www.feuerwehr-zoerbig.de/fileadmin/user_upload/kein-einsatz-vorhanden2.jpg"
+                 alt="In diesem Jahr wurden noch keine Einsatzberichte veröffentlicht."
+                 style="max-width:100%;height:auto;" />
+        </div>
+    </f:else>
+</f:if>
+</html>
