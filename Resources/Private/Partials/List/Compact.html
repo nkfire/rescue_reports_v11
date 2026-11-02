@@ -72,7 +72,16 @@
                                     <div class="rr-list__body">
                                         <p class="rr-list__title">
                                             <f:if condition="{item.keyword}">
-                                                <span class="rr-list__kw" title="{item.category.title}">{item.keyword}</span>
+                                                <f:if condition="{item.escalated}">
+                                                    <f:then>
+                                                        <span class="rr-list__kw rr-list__kw--up" title="Stichworterhöhung{f:if(condition: item.originalKeyword, then: ' von {item.originalKeyword}')} auf {item.keyword}">
+                                                            <span class="rr-list__up" aria-hidden="true">▲</span>{item.keyword}<span class="rr-list__sr"> (Stichworterhöhung{f:if(condition: item.originalKeyword, then: ' von {item.originalKeyword}')})</span>
+                                                        </span>
+                                                    </f:then>
+                                                    <f:else>
+                                                        <span class="rr-list__kw" title="{item.category.title}">{item.keyword}</span>
+                                                    </f:else>
+                                                </f:if>
                                             </f:if>
                                             <f:if condition="{event.disableDetail}">
                                                 <f:then><span class="rr-list__name">{event.title}</span></f:then>

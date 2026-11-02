@@ -365,7 +365,11 @@ ul.no-bullet li {
     display: inline-block; padding: .05rem .4rem; border-radius: 4px;
     background: var(--rr-cat, var(--rr-red)); color: var(--rr-cat-ink, #fff);
     font-size: .72rem; font-weight: 700; letter-spacing: .03em; line-height: 1.5;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, .25);
 }
+.rr-list__kw[style*="--rr-cat-ink: #1d1f23"], .rr-list__item[style*="--rr-cat-ink: #1d1f23"] .rr-list__kw { text-shadow: none; }
+.rr-list__kw--up { display: inline-flex; align-items: center; gap: .25rem; box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--rr-cat, var(--rr-red)); }
+.rr-list__up { font-size: .62rem; line-height: 1; }
 .rr-list .rr-list__name { font-weight: 700; color: var(--rr-ink); text-decoration: none; }
 .rr-list a.rr-list__name::after { content: ""; position: absolute; inset: 0; }
 .rr-list a.rr-list__name:hover { text-decoration: underline; }

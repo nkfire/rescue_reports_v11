@@ -52,6 +52,8 @@ class CompactListBuilder
             $row['category'] = $category;
             $row['categoryKey'] = $catKey;
             $row['keyword'] = $this->keywordOf($event);
+            $row['originalKeyword'] = $this->firstTitle($event->getTypes());
+            $row['escalated'] = $this->isEscalated($event) && $row['keyword'] !== '';
             $row['isNight'] = false;
             $row['day'] = '';
             $row['monthShort'] = '';
@@ -132,22 +134,20 @@ class CompactListBuilder
      */
     private function effectiveTypes(Event $event): iterable
     {
-        if (method_exists($event, 'getEnableKeywordEscalation')
-            && $event->getEnableKeywordEscalation()
-            && method_exists($event, 'getKeywordEscalation')
-            && count($event->getKeywordEscalation()) > 0
-        ) {
-            return $event->getKeywordEscalation();
-        }
-        return $event->getTypes();
+        return $this->isEscalated($event) ? $event->getKeywordEscalation() : $event->getTypes();
     }
 
-    /**
-     * Alarmstichwort (Titel der maßgeblichen Einsatzart, z. B. "TH1", "BMA").
-     */
-    private function keywordOf(Event $event): string
+    private function isEscalated(Event $event): bool
     {
-        foreach ($this->effectiveTypes($event) as $type) {
+        return method_exists($event, 'getEnableKeywordEscalation')
+            && $event->getEnableKeywordEscalation()
+            && method_exists($event, 'getKeywordEscalation')
+            && count($event->getKeywordEscalation()) > 0;
+    }
+
+    private function firstTitle(iterable $types): string
+    {
+        foreach ($types as $type) {
             if (is_object($type) && method_exists($type, 'getTitle')) {
                 $title = trim((string)$type->getTitle());
                 if ($title !== '') {
@@ -156,6 +156,14 @@ class CompactListBuilder
             }
         }
         return '';
+    }
+
+    /**
+     * Alarmstichwort (Titel der maßgeblichen Einsatzart, z. B. "TH1", "BMA").
+     */
+    private function keywordOf(Event $event): string
+    {
+        return $this->firstTitle($this->effectiveTypes($event));
     }
 
     /**
@@ -184,7 +192,7 @@ class CompactListBuilder
     }
 
     /**
-     * Lesbare Schriftfarbe (schwarz/weiß) für Text auf der Kategoriefarbe.
+     * Lesbare Schriftfarbe (weiß/dunkel) für das Stichwort-Kürzel auf der Kategoriefarbe.
      */
     private function inkFor(string $hex): string
     {
@@ -199,7 +207,8 @@ class CompactListBuilder
         $luminance = 0.2126 * $channel(substr($hex, 0, 2))
             + 0.7152 * $channel(substr($hex, 2, 2))
             + 0.0722 * $channel(substr($hex, 4, 2));
-        // Kontrast gegen Weiß vs. gegen Schwarz vergleichen
-        return (1.05 / ($luminance + 0.05)) >= (($luminance + 0.05) / 0.05) ? '#fff' : '#1d1f23';
+        // Weiß bevorzugen, solange es für das fette Kürzel ausreicht (Kontrast ≥ 3:1,
+        // z. B. Blau der TH); helle Farben wie Gelb (ABC) bekommen dunkle Schrift.
+        return (1.05 / ($luminance + 0.05)) >= 3.0 ? '#fff' : '#1d1f23';
     }
 }
