@@ -64,7 +64,7 @@
                             </div>
                         </div>
                         <div class="rescue-statistics__table-wrap">
-                            <table class="rescue-statistics__table">
+                            <table class="rescue-statistics__table rescue-statistics__table--categories">
                                 <thead>
                                     <tr>
                                         <th></th>
@@ -78,22 +78,22 @@
                                 <tbody>
                                     <f:for each="{yearData.categories}" as="cat">
                                         <tr>
-                                            <td><span class="rescue-statistics__dot" style="background:{cat.color}"></span></td>
-                                            <td>{cat.title}</td>
-                                            <td class="rescue-statistics__num">{cat.count}</td>
-                                            <td class="rescue-statistics__num">{cat.percent} %</td>
-                                            <td class="rescue-statistics__num">{cat.avgDuration}</td>
-                                            <td class="rescue-statistics__num">{cat.totalDuration}</td>
+                                            <td class="rescue-statistics__cell-dot"><span class="rescue-statistics__dot" style="background:{cat.color}"></span></td>
+                                            <td class="rescue-statistics__cell-name">{cat.title}</td>
+                                            <td class="rescue-statistics__num rescue-statistics__cell-count">{cat.count}</td>
+                                            <td class="rescue-statistics__num rescue-statistics__cell-share">{cat.percent} %</td>
+                                            <td class="rescue-statistics__num rescue-statistics__cell-avg" data-label="Ø">{cat.avgDuration}</td>
+                                            <td class="rescue-statistics__num rescue-statistics__cell-sum" data-label="gesamt">{cat.totalDuration}</td>
                                         </tr>
                                     </f:for>
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <td colspan="2"><strong><f:translate key="LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:statistics.total" /></strong></td>
-                                        <td class="rescue-statistics__num"><strong>{yearData.total}</strong></td>
-                                        <td class="rescue-statistics__num"><strong>100 %</strong></td>
-                                        <td class="rescue-statistics__num">—</td>
-                                        <td class="rescue-statistics__num"><strong>{yearData.yearTotalDuration}</strong></td>
+                                        <td colspan="2" class="rescue-statistics__cell-name"><strong><f:translate key="LLL:EXT:rescue_reports/Resources/Private/Language/locallang_db.xlf:statistics.total" /></strong></td>
+                                        <td class="rescue-statistics__num rescue-statistics__cell-count"><strong>{yearData.total}</strong></td>
+                                        <td class="rescue-statistics__num rescue-statistics__cell-share"><strong>100 %</strong></td>
+                                        <td class="rescue-statistics__num rescue-statistics__cell-avg rescue-statistics__cell-empty">—</td>
+                                        <td class="rescue-statistics__num rescue-statistics__cell-sum" data-label="gesamt"><strong>{yearData.yearTotalDuration}</strong></td>
                                     </tr>
                                 </tfoot>
                             </table>
