@@ -212,7 +212,10 @@
                     </div>
                 </f:if>
 
-                <f:render section="EventListContentNewDesign" arguments="{_all}" />
+                <f:if condition="{listLayout} == 'compact'">
+                    <f:then><f:render partial="List/Compact" arguments="{_all}" /></f:then>
+                    <f:else><f:render section="EventListContentNewDesign" arguments="{_all}" /></f:else>
+                </f:if>
             </div>
         </f:case>
 
@@ -368,7 +371,10 @@
                 </div>
             </f:if>
 
-            <f:render section="EventListContent" arguments="{_all}" />
+            <f:if condition="{listLayout} == 'compact'">
+                    <f:then><f:render partial="List/Compact" arguments="{_all}" /></f:then>
+                    <f:else><f:render section="EventListContent" arguments="{_all}" /></f:else>
+                </f:if>
         </f:case>
 
     </f:switch>

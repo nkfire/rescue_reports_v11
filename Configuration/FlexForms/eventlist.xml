@@ -288,6 +288,27 @@
                         </TCEforms>
                     </settings.mapPosition>
 
+                    <settings.listLayout>
+                        <TCEforms>
+                            <label>Darstellung der Einsatzliste</label>
+                            <config>
+                                <type>select</type>
+                                <renderType>selectSingle</renderType>
+                                <items>
+                                    <numIndex index="0">
+                                        <numIndex index="0">Kompakt: Monatsgruppen, Stichwort, Kategorie-Filter</numIndex>
+                                        <numIndex index="1">compact</numIndex>
+                                    </numIndex>
+                                    <numIndex index="1">
+                                        <numIndex index="0">Klassisch: einfache Zeilen</numIndex>
+                                        <numIndex index="1">classic</numIndex>
+                                    </numIndex>
+                                </items>
+                                <default>compact</default>
+                            </config>
+                        </TCEforms>
+                    </settings.listLayout>
+
                 </el>
             </ROOT>
         </general>
