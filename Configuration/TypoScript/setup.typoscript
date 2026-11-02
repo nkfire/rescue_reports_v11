@@ -27,7 +27,6 @@ page.includeJSFooter.leaflet.disableCompression = 1
 page.includeJSFooter.leaflet.excludeFromConcatenation = 1
 page.includeJSFooter.rescueReportsMap = EXT:rescue_reports/Resources/Public/Js/map.js
 page.includeJSFooter.rescueReportsMap.excludeFromConcatenation = 1
-page.includeJSFooter.rescueReportsPulse = EXT:rescue_reports/Resources/Public/Js/pulse.js
 
 plugin.tx_rescuereports_rss {
     view {

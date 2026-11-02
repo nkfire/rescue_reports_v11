@@ -4,7 +4,6 @@ namespace Nkfire\RescueReports\Controller;
 use Nkfire\RescueReports\Domain\Model\Event;
 use Nkfire\RescueReports\Domain\Repository\EventRepository;
 use Nkfire\RescueReports\Domain\Repository\StationRepository;
-use Nkfire\RescueReports\Utility\EventPulseBuilder;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use PDO;
@@ -265,21 +264,6 @@ class EventController extends ActionController
             }
         }
 
-        // Einsatz-Puls: Jahres-Heatmap + Kennzahlen + Mitmach-Aufruf über der Liste.
-        // Standard: aktiv (auch für bestehende Plugins ohne gespeicherten FlexForm-Wert).
-        $pulse = [];
-        $showPulse = (bool)($this->settings['showPulse'] ?? true)
-            && in_array($templateVariant, ['bootstrap', 'foundation'], true)
-            && $searchWord === '';
-        if ($showPulse) {
-            $pulse = GeneralUtility::makeInstance(EventPulseBuilder::class)->build($eventItems, $selectedYear);
-            if ($pulse !== []) {
-                $pulse['ctaPageUid'] = $this->normalizeDetailPageUid($this->settings['pulseCtaPageUid'] ?? null);
-                $pulse['ctaText'] = trim((string)($this->settings['pulseCtaText'] ?? '')) ?: 'Werde Teil der Einsatzabteilung';
-                $pulse['supportPageUid'] = $this->normalizeDetailPageUid($this->settings['pulseSupportPageUid'] ?? null);
-            }
-        }
-
         // Jahresgruppen mit eingebetteten Statistiken für Inline-Rendering
         // Vermeidet dynamischen Array-Zugriff {statisticsByYear.{year}} in Fluid (unzuverlässig)
         $yearGroupsWithStats = [];
@@ -324,7 +308,6 @@ class EventController extends ActionController
             'activeStationName'   => $activeStationName,
             'showMapView'         => $showMapView,
             'mapPosition'         => $mapPosition,
-            'pulse'               => $pulse,
         ]);
 
         return $this->htmlResponse();

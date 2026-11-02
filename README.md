@@ -57,25 +57,6 @@ Hauptansicht mit Listenansicht und Detailansicht der Einsätze.
 - Ist „Aktuelles Jahr" gewählt, wird die Liste beim ersten Aufruf automatisch auf das laufende Jahr gefiltert; der Besucher kann per Jahresauswahl wechseln.
 - **„Jahresfilter anzeigen"** steuert nur die Sichtbarkeit der Jahresauswahl im Frontend – der Datenbereich und die Gruppierung sind davon unabhängig.
 
-#### Einsatz-Puls
-
-Über der Einsatzliste (Bootstrap- und Foundation-Design) erscheint standardmäßig der **Einsatz-Puls**: ein Hero-Bereich, der das Einsatzjahr auf einen Blick zeigt und Besucher zum Mitmachen einlädt.
-
-- **Jahres-Heatmap:** jeder Tag ein Feld, eingefärbt nach Einsatzkategorie (Farbe aus dem Kategorie-Datensatz), weiß umrandet bei mehreren Einsätzen. Ein Klick springt zum Einsatz in der Liste und hebt ihn kurz hervor.
-- **Kennzahlen:** Anzahl, Gesamtdauer, „alle X Tage ein Alarm“, Anteil nachts (22–6 Uhr) und am Wochenende, stärkster Monat.
-- **„Letzter Alarm vor X Tagen“:** wird im Browser berechnet und bleibt deshalb trotz Seiten-Cache aktuell.
-- **Tageszeit-Verteilung:** 24 Balken nach Alarmierungszeit, Nachtstunden abgesetzt.
-- **Mitmach-Aufruf:** Buttons zu frei wählbaren Seiten (Einsatzabteilung / Förderverein). Ohne gewählte Seiten bleibt nur der Text stehen.
-
-Datengrundlage sind genau die Einsätze, die die Liste anzeigt (Station, Jahr, Datumsfilter). Ist „Alle Jahre“ aktiv, zeigt der Puls das jüngste Jahr. Bei aktiver Suche wird er ausgeblendet.
-
-| Einstellung | Beschreibung | Standard |
-|---|---|---|
-| **Einsatz-Puls anzeigen** | Puls über der Liste ein-/ausblenden | Ja |
-| **Seite für „Mitmachen“** | Ziel des roten Buttons | – |
-| **Text des Mitmach-Buttons** | | Werde Teil der Einsatzabteilung |
-| **Seite für „Unterstützen“** | Ziel des zweiten Buttons (z. B. Förderverein) | – |
-
 #### Statistik
 
 Die Statistik basiert auf dem Tortendiagramm-Partial (`Statistics/PieChart.html`) und wird sowohl als Block (einzelnes Jahr) als auch inline über jeder Jahresgruppe (alle Jahre) gerendert. Beim Hover über ein Tortenstück erscheint ein CSS-Tooltip mit Kategoriename, zugehörigen Einsatzarten und Anzahl/Prozentsatz. Die Position (ober-/unterhalb) wird über `statisticsPosition` gesteuert.

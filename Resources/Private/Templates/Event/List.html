@@ -212,7 +212,6 @@
                     </div>
                 </f:if>
 
-                <f:if condition="{pulse}"><f:render partial="Pulse/Overview" arguments="{pulse: pulse}" /></f:if>
                 <f:render section="EventListContentNewDesign" arguments="{_all}" />
             </div>
         </f:case>
@@ -369,7 +368,6 @@
                 </div>
             </f:if>
 
-            <f:if condition="{pulse}"><f:render partial="Pulse/Overview" arguments="{pulse: pulse}" /></f:if>
             <f:render section="EventListContent" arguments="{_all}" />
         </f:case>
 
@@ -427,7 +425,7 @@
                     <f:for each="{yearGroup.events}" as="item">
                         <f:variable name="event" value="{item.event}" />
 
-                        <div id="einsatz-{event.uid}" class="panelsmall <f:if condition='!{event.disableDetail}'>panelsmall--clickable</f:if>">
+                        <div class="panelsmall <f:if condition='!{event.disableDetail}'>panelsmall--clickable</f:if>">
                             <div class="panelsmall__inner">
                                 <div class="row">
                                     <div class="small-2 medium-1 columns enumber text-center">
@@ -477,7 +475,7 @@
                 <f:for each="{eventItems}" as="item">
                     <f:variable name="event" value="{item.event}" />
 
-                    <div id="einsatz-{event.uid}" class="panelsmall <f:if condition='!{event.disableDetail}'>panelsmall--clickable</f:if>">
+                    <div class="panelsmall <f:if condition='!{event.disableDetail}'>panelsmall--clickable</f:if>">
                         <div class="panelsmall__inner">
                             <div class="row">
                                 <div class="small-2 medium-1 columns enumber text-center">
@@ -612,7 +610,7 @@
                         <f:for each="{yearGroup.events}" as="item">
                             <f:variable name="event" value="{item.event}" />
 
-                            <li id="einsatz-{event.uid}" class="panelsmall <f:if condition='!{event.disableDetail}'>panelsmall--clickable</f:if>" style="padding:12px 10px; border-bottom:1px solid #e5e9f2; position:relative;">
+                            <li class="panelsmall <f:if condition='!{event.disableDetail}'>panelsmall--clickable</f:if>" style="padding:12px 10px; border-bottom:1px solid #e5e9f2; position:relative;">
                                 <div class="row g-2 align-items-center">
                                     <div class="col-auto enumber" style="font-weight:600; opacity: 0.8; color:#5b8fd9; min-width:60px;">
                                         {item.plainNumber}
@@ -661,7 +659,7 @@
                     style="margin:0; padding:0; list-style:none;">
                     <f:for each="{eventItems}" as="item">
                         <f:variable name="event" value="{item.event}" />
-                        <li id="einsatz-{event.uid}" class="panelsmall <f:if condition='!{event.disableDetail}'>panelsmall--clickable</f:if>" style="padding:12px 10px; border-bottom:1px solid #e5e9f2; position:relative;">
+                        <li class="panelsmall <f:if condition='!{event.disableDetail}'>panelsmall--clickable</f:if>" style="padding:12px 10px; border-bottom:1px solid #e5e9f2; position:relative;">
                             <div class="row g-2 align-items-center">
                                 <div class="col-auto enumber" style="font-weight:600; opacity: 0.8; color:#5b8fd9; min-width:60px;">
                                     {item.plainNumber}
